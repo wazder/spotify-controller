@@ -1,63 +1,63 @@
-<!-- File: index.html -->
 <!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
+  <!-- iPad 2 & iOS9 için zoom kapalı viewport -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
   <title>Wazder Spotify Player</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background-color: #000;
-      color: #fff;
-      position: relative;
-    }
-    #containers {
-      display: flex;
-      gap: 20px;
-    }
-    #playlistContainer, #trackContainer {
-      width: 300px;
-      max-height: 400px;
-      overflow-y: auto;
-      background-color: #111;
-      padding: 10px;
-      border-radius: 4px;
-    }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #containers { display: flex; gap: 20px; }
+    #playlistContainer, #trackContainer { flex: 1; }
+
     .playlist-item, .track-item {
-      width: 100%;
-      box-sizing: border-box;
       padding: 10px;
       margin-bottom: 5px;
-      border: 2px solid #333;
+      border: 2px solid #ccc;
       border-radius: 4px;
       position: relative;
       cursor: pointer;
-      overflow: hidden;
+      transition: border-color 0.2s, background-color 0.2s, color 0.2s;
     }
-    .playlist-item span, .track-item span {
-      display: inline-block;
-      white-space: nowrap;
-    }
-    /* Çalan playlist */
-    .playlist-item.playing-playlist { border-color: #1DB954; }
-    .playlist-item.playing-playlist::after { content: " 🔊"; right: 10px; top: 50%; transform: translateY(-50%); }
-    /* Seçili playlist */
-    .playlist-item.selected-playlist { border-color: brown; }
-    .playlist-item.selected-playlist::after { content: " 📂"; right: 10px; top: 50%; transform: translateY(-50%); }
-    /* Hem çalıyor hem seçili */
-    .playlist-item.playing-playlist.selected-playlist {
-      background-color: #1DB954;
-      color: #000;
+
+    /* Çalan playlist: yeşil kenarlık + ikon */
+    .playlist-item.playing-playlist {
       border-color: #1DB954;
     }
-    .playlist-item.playing-playlist.selected-playlist::after { content: " 🔊📂"; right: 10px; top: 50%; transform: translateY(-50%); }
+    .playlist-item.playing-playlist::after {
+      content: " 🔊";
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    }
 
-    /* Çalan track */
-    .track-item.playing-track { background-color: #1DB954; color: #000; }
-    .track-item.playing-track::after { content: " ▶️"; right: 10px; top: 50%; transform: translateY(-50%); }
+    /* Seçili (görüntülenen) playlist: kahverengi kenarlık + ikon */
+    .playlist-item.selected-playlist {
+      border-color: brown;
+    }
+    .playlist-item.selected-playlist::after {
+      content: " 📂";
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    }
+
+    /* Hem çalıyor hem seçili ise: yeşil arkaplan + iki ikon */
+    .playlist-item.playing-playlist.selected-playlist {
+      background-color: #1DB954;
+      color: #fff;
+      border-color: #1DB954;
+    }
+    .playlist-item.playing-playlist.selected-playlist::after {
+      content: " 🔊📂";
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    }
+
+    /* Çalan track: yeşil arkaplan + işaret */
+    .track-item.playing-track {
+      background-color: #1DB954;
+      color: #fff;
+    }
+    .track-item.playing-track::after {
+      content: " ▶️";
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    }
 
     button {
       padding: 10px 20px;
@@ -67,23 +67,7 @@
       background-color: #1DB954;
       color: #fff;
       cursor: pointer;
-    }
-    #prevButton, #nextButton {
-      position: absolute;
-      top: 20px;
-    }
-    #prevButton { right: 120px; }
-    #nextButton { right: 20px; }
-
-    @keyframes marquee {
-      0%   { transform: translateX(0%); }
-      100% { transform: translateX(-100%); }
-    }
-    .playlist-item:hover span,
-    .track-item:hover span,
-    .playlist-item.playing-playlist span,
-    .track-item.playing-track span {
-      animation: marquee 5s linear infinite;
+      margin-right: 10px;
     }
   </style>
 </head>
@@ -106,27 +90,176 @@
     <button id="nextButton">Next</button>
   </div>
 
-  <script>
-    // Global state
-    let playlists = [], currentTracks = [];
-    let selectedPlaylistId = '', playingPlaylistId = '';
-    let currentTrackUri = '', currentIndex = 0;
+<script>
+  // Global state
+  let playlists = [], currentTracks = [];
+  let selectedPlaylistId = '', playingPlaylistId = '';
+  let currentTrackUri = '', currentIndex = 0;
 
-    // PKCE helpers
-    function generateRandomString(len) {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-      let result = '';
-      for (let i = 0; i < len; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return result;
+  // PKCE helpers
+  function generateRandomString(len) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let s = '';
+    for (let i = 0; i < len; i++) s += chars.charAt(Math.floor(Math.random() * chars.length));
+    return s;
+  }
+  async function sha256(str) {
+    const buf = new TextEncoder().encode(str);
+    const hash = await crypto.subtle.digest('SHA-256', buf);
+    return btoa(String.fromCharCode(...new Uint8Array(hash)))
+           .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+
+  // Handle redirect & exchange code
+  (async function(){
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (!code) return;
+    const clientId    = '6210ee0b3a6e4436b48176ea6bf02d93';
+    const redirectUri = 'https://wazder.github.io/webplayer/page1.html';
+    const verifier    = localStorage.getItem('spotify_code_verifier');
+    try {
+      const body = new URLSearchParams({
+        grant_type:    'authorization_code',
+        code, redirect_uri: redirectUri,
+        client_id:     clientId,
+        code_verifier: verifier
+      });
+      const resp = await fetch('https://accounts.spotify.com/api/token', {
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:body.toString()
+      });
+      const data = await resp.json();
+      if (!data.access_token) throw data;
+      window.history.replaceState({},'', '/webplayer/page1.html');
+      window.accessToken = data.access_token;
+      document.getElementById('loginBtn').style.display = 'none';
+      document.getElementById('app').style.display    = 'block';
+      fetchPlaylists();
+    } catch(e){ console.error(e); alert('Token alınamadı.'); }
+  })();
+
+  // Login + PKCE
+  document.getElementById('loginBtn').addEventListener('click', async ()=>{
+    const clientId    = '6210ee0b3a6e4436b48176ea6bf02d93';
+    const redirectUri = 'https://wazder.github.io/webplayer/page1.html';
+    const state       = generateRandomString(16);
+    const verifier    = generateRandomString(64);
+    localStorage.setItem('spotify_code_verifier', verifier);
+    const challenge = await sha256(verifier);
+    const scope     = 'playlist-read-private user-modify-playback-state';
+    const authUrl =
+      'https://accounts.spotify.com/authorize?response_type=code'
+      + &client_id=${encodeURIComponent(clientId)}
+      + &scope=${encodeURIComponent(scope)}
+      + &redirect_uri=${encodeURIComponent(redirectUri)}
+      + &state=${encodeURIComponent(state)}
+      + &code_challenge=${encodeURIComponent(challenge)}
+      + &code_challenge_method=S256;
+    window.location = authUrl;
+  });
+
+  // Fetch + render playlists
+  function fetchPlaylists(){
+    fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
+      headers:{'Authorization':'Bearer '+window.accessToken}
+    })
+    .then(async res=>{
+      if(!res.ok){ const err=await res.json().catch(()=>({})); throw new Error(err.error?.message||res.status); }
+      return res.json();
+    })
+    .then(data=>{
+      playlists = data.items;
+      renderPlaylists();
+    })
+    .catch(err=>{ console.error(err); alert('Playlist yüklenemedi: '+err.message); });
+  }
+  function renderPlaylists(){
+    const c = document.getElementById('playlistContainer');
+    c.innerHTML = '';
+    playlists.forEach((pl,i)=>{
+      const d = document.createElement('div');
+      d.className = 'playlist-item'
+        + (pl.id===playingPlaylistId?' playing-playlist':'')
+        + (pl.id===selectedPlaylistId?' selected-playlist':'');
+      d.textContent = ${i+1}. ${pl.name};
+      d.addEventListener('click',()=>togglePlaylist(pl.id));
+      c.appendChild(d);
+    });
+    if(!selectedPlaylistId) document.getElementById('trackContainer').innerHTML='';
+  }
+
+  // Toggle playlist & clear or load tracks
+  function togglePlaylist(id){
+    if(selectedPlaylistId===id){
+      selectedPlaylistId=''; currentTracks=[]; renderPlaylists();
+      document.getElementById('trackContainer').innerHTML='';
+    } else {
+      selectedPlaylistId=id; loadTracks(id);
     }
-    async function sha256(str) {
-      const encoder = new TextEncoder();
-      const data = encoder.encode(str);
-      const hash = await crypto.subtle.digest('SHA-256', data);
-      const bytes = new Uint8Array(hash);
-      let binary = '';
-      for (let b of bytes) binary += String.fromCharCode(b);
-      return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  // Load + render tracks
+  function loadTracks(id){
+    fetch(https://api.spotify.com/v1/playlists/${id}/tracks?limit=100, {
+      headers:{'Authorization':'Bearer '+window.accessToken}
+    })
+    .then(async res=>{
+      if(!res.ok) throw new Error(res.status);
+      return res.json();
+    })
+    .then(data=>{
+      currentTracks = data.items.map(i=>({uri:i.track.uri,name:i.track.name}));
+      renderPlaylists(); renderTracks();
+    })
+    .catch(err=>{ console.error(err); alert('Şarkılar yüklenemedi: '+err.message); });
+  }
+  function renderTracks(){
+    const c = document.getElementById('trackContainer');
+    c.innerHTML = '';
+    currentTracks.forEach((t,i)=>{
+      const d = document.createElement('div');
+      d.className = 'track-item'+(t.uri===currentTrackUri?' playing-track':'');
+      d.textContent = ${i+1}. ${t.name};
+      d.addEventListener('click',()=>playTrack(i));
+      c.appendChild(d);
+    });
+  }
+
+  // Play track & update states
+  async function playTrack(idx){
+    const uri = currentTracks[idx].uri;
+    try {
+      const resp = await fetch('https://api.spotify.com/v1/me/player/play',{
+        method:'PUT',
+        headers:{
+          'Authorization':'Bearer '+window.accessToken,
+          'Content-Type':'application/json'
+        },
+        body:JSON.stringify({uris:[uri]})
+      });
+      if(!resp.ok) throw new Error(resp.status);
+      playingPlaylistId  = selectedPlaylistId;
+      currentTrackUri    = uri;
+      currentIndex       = idx;
+      renderPlaylists(); renderTracks();
+    } catch(err){
+      console.error(err); alert('Çalma hatası: '+err.message);
     }
+  }
+
+  // Prev & Next
+  document.getElementById('prevButton').addEventListener('click',()=>{
+    if(!currentTracks.length) return;
+    const prev = (currentIndex-1+currentTracks.length)%currentTracks.length;
+    playTrack(prev);
+  });
+  document.getElementById('nextButton').addEventListener('click',()=>{
+    if(!currentTracks.length) return;
+    const next = (currentIndex+1)%currentTracks.length;
+    playTrack(next);
+  });
+</script>
+</body>
+</html>
