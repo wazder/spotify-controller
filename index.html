@@ -17,8 +17,9 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       height: 100vh;
+      padding-top: 20vh; /* sayfanın ortasından %20 yukarıda */
     }
     #loginContainer h1 {
       margin-bottom: 20px;
@@ -47,8 +48,8 @@
       margin-bottom: 20px;
     }
     #coverArt {
-      width: 80px;
-      height: 80px;
+      width: 64px;   /* %20 küçültülmüş */
+      height: 64px;
       background-color: #222;
       border-radius: 4px;
       background-size: cover;
@@ -69,20 +70,17 @@
       align-items: center;
       gap: 10px;
     }
-    #controls button {
+    /* Önceki ve sonraki butonlarının arka planı şeffaf, sadece ikon gözükür */
+    #prevBtn,
+    #nextBtn {
       font-size: 1.2rem;
       padding: 8px;
+      background: transparent;
       border: none;
-      border-radius: 4px;
-      background-color: #fff;
-      color: #000;
+      color: #fff;
       cursor: pointer;
     }
-    #controls button.active {
-      background-color: #1DB954;
-      color: #000;
-    }
-    /* Three-column layout */
+    /* Üç sütun düzeni */
     #containers {
       display: flex;
       gap: 20px;
@@ -105,6 +103,9 @@
       border-radius: 4px;
       cursor: pointer;
       position: relative;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
     }
     .item.playing {
       background-color: #1DB954;
@@ -118,17 +119,27 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      width: calc(100% - 10px);
+      max-width: calc(100% - 10px);
     }
-    .item:hover span,
-    .item.playing span {
+    /* Playlist açıklaması */
+    .item .desc {
+      color: #777;
+      margin-left: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: calc(100% - 10px);
+    }
+    /* Kayan metin yalnızca .playing veya .selected öğelerde, taşma varsa */
+    .item.playing span,
+    .item.selected span {
       animation: marquee 5s linear infinite;
     }
     @keyframes marquee {
       0% { transform: translateX(0%); }
       100% { transform: translateX(-100%); }
     }
-    /* Show More buttons */
+    /* Show More butonları */
     .show-more {
       display: block;
       width: 100%;
@@ -146,7 +157,7 @@
 <body>
   <!-- LOGIN SCREEN -->
   <div id="loginContainer">
-    <h1>Welcome to Wazder’s Login Page</h1>
+    <h1>welcome to wazder's spotify controller</h1>
     <button id="loginBtn">Spotify Login</button>
   </div>
 
@@ -157,13 +168,11 @@
       <div id="coverArt"></div>
       <div id="trackInfo">
         <h2 id="nowTitle">—</h2>
-        <div id="positionDisplay">0 / 0:00</div>
+        <div id="positionDisplay">00:00 / 00:00</div>
       </div>
       <div id="controls">
-        <button id="prevBtn">⏮️</button>
-        <button id="shuffleBtn">🔀</button>
-        <button id="repeatBtn">🔁</button>
-        <button id="nextBtn">⏭️</button>
+        <button id="prevBtn">⏮</button>
+        <button id="nextBtn">⏭</button>
       </div>
     </div>
 
@@ -172,22 +181,23 @@
       <div class="column" id="playlistColumn">
         <h3>Playlists</h3>
         <div id="playlistContainer"></div>
-        <!-- Show more playlists if available -->
         <button id="morePlaylistsBtn" class="show-more" style="display:none;">Show More</button>
       </div>
       <div class="column" id="trackColumn">
         <h3>Tracks</h3>
         <div id="trackContainer"></div>
-        <!-- Show more tracks if available -->
         <button id="moreTracksBtn" class="show-more" style="display:none;">Show More</button>
       </div>
       <div class="column" id="infoColumn">
         <h3>Track Info</h3>
-        <div id="detailCover" style="width:100%; height:0; padding-bottom:100%; background:#222; background-size:cover; background-position:center; border-radius:4px;"></div>
+        <div id="detailCover"
+             style="width:100%;height:0;padding-bottom:100%;background:#222;
+                    background-size:cover;background-position:center;border-radius:4px;">
+        </div>
         <p id="detailArtist" style="margin:10px 0 4px;">Artist: —</p>
-        <p id="detailName" style="margin:4px 0;">Track: —</p>
-        <p id="detailAlbum" style="margin:4px 0;">Album: —</p>
-        <p id="detailDuration" style="margin:4px 0;">Duration: 0:00</p>
+        <p id="detailName"   style="margin:4px 0;">Track: —</p>
+        <p id="detailAlbum"  style="margin:4px 0;">Album: —</p>
+        <p id="detailDuration" style="margin:4px 0;">Duration: 00:00</p>
       </div>
     </div>
   </div>
@@ -201,22 +211,18 @@
     let currentIndex = 0;
     let currentDurationSec = 0;
     let updateInterval = null;
-    let shuffleOn = false;
-    let repeatOn = false;
 
-    // Utils
+    // Utils: iki haneli MM:SS
     function formatMS(ms) {
       const totalSec = Math.floor(ms / 1000);
       const m = Math.floor(totalSec / 60);
       const s = totalSec % 60;
-      return m + ':' + (s<10?'0'+s:s);
-    }
-    function b64encode(str) {
-      return btoa(String.fromCharCode(...new TextEncoder().encode(str)))
-        .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+      const mStr = m < 10 ? '0' + m : '' + m;
+      const sStr = s < 10 ? '0' + s : '' + s;
+      return `${mStr}:${sStr}`;
     }
 
-    // Initial OAuth PKCE exchange...
+    // OAuth PKCE exchange
     (async function() {
       const params = new URLSearchParams(window.location.search);
       const code = params.get('code');
@@ -224,15 +230,21 @@
       const clientId = '46a1e07e779c46998b413317a78b8a26';
       const redirectUri = window.location.origin + window.location.pathname;
       const verifier = localStorage.getItem('spotify_code_verifier');
-      const body = new URLSearchParams({ grant_type:'authorization_code', code, redirect_uri:redirectUri, client_id:clientId, code_verifier:verifier });
-      const resp = await fetch('https://accounts.spotify.com/api/token',{
-        method:'POST',
-        headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body:body.toString()
+      const body = new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: redirectUri,
+        client_id: clientId,
+        code_verifier: verifier
+      });
+      const resp = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
       });
       const data = await resp.json();
       if (!data.access_token) { alert('Token alınamadı.'); return; }
-      window.history.replaceState({},'',window.location.pathname);
+      window.history.replaceState({}, '', window.location.pathname);
       window.accessToken = data.access_token;
       document.getElementById('loginContainer').style.display = 'none';
       document.getElementById('app').style.display = 'block';
@@ -243,11 +255,18 @@
     document.getElementById('loginBtn').addEventListener('click', async () => {
       const clientId = '46a1e07e779c46998b413317a78b8a26';
       const redirectUri = window.location.origin + window.location.pathname;
-      const verifier = Array.from(crypto.getRandomValues(new Uint8Array(64)), dec=>('0'+dec.toString(16)).slice(-2)).join('');
+      const verifier = Array.from(crypto.getRandomValues(new Uint8Array(64)),
+        dec => ('0'+dec.toString(16)).slice(-2)).join('');
       localStorage.setItem('spotify_code_verifier', verifier);
-      const challenge = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))
-        .then(h=>btoa(String.fromCharCode(...new Uint8Array(h))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''));
-      const authUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&scope=${encodeURIComponent('playlist-read-private user-modify-playback-state user-read-playback-state')}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge_method=S256&code_challenge=${encodeURIComponent(challenge)}`;
+      const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+      const challenge = btoa(String.fromCharCode(...new Uint8Array(hash)))
+        .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+      const authUrl = `https://accounts.spotify.com/authorize?response_type=code
+        &client_id=${encodeURIComponent(clientId)}
+        &scope=${encodeURIComponent('playlist-read-private user-modify-playback-state user-read-playback-state')}
+        &redirect_uri=${encodeURIComponent(redirectUri)}
+        &code_challenge_method=S256
+        &code_challenge=${encodeURIComponent(challenge)}`.replace(/\s+/g,'');
       window.location = authUrl;
     });
 
@@ -271,10 +290,18 @@
       c.innerHTML = '';
       playlists.forEach(pl => {
         const div = document.createElement('div');
-        div.className = 'item'+(pl.id===selectedPlaylistId?' selected':'')+(pl.id===playingContextUri?' playing':'');
-        const span = document.createElement('span');
-        span.textContent = pl.name;
-        div.appendChild(span);
+        div.className = 'item'
+          + (pl.id===selectedPlaylistId ? ' selected':'')
+          + (pl.id===playingContextUri   ? ' playing':'');
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = pl.name;
+        div.appendChild(nameSpan);
+        if (pl.description) {
+          const descSpan = document.createElement('span');
+          descSpan.className = 'desc';
+          descSpan.textContent = ', ' + pl.description;
+          div.appendChild(descSpan);
+        }
         div.addEventListener('click', ()=>selectPlaylist(pl));
         c.appendChild(div);
       });
@@ -308,7 +335,7 @@
       tracks.forEach((i, idx) => {
         const t = i.track;
         const div = document.createElement('div');
-        div.className = 'item'+(idx===currentIndex?' playing':'');
+        div.className = 'item' + (idx===currentIndex ? ' playing':'');
         const span = document.createElement('span');
         span.textContent = t.name;
         div.appendChild(span);
@@ -332,61 +359,54 @@
         },
         body: JSON.stringify(body)
       });
-      // setup UI
       playingContextUri = selectedPlaylistId;
       currentIndex = idx;
       currentDurationSec = Math.floor(t.duration_ms/1000);
-      document.getElementById('nowTitle').textContent = `${t.name} — ${t.artists.map(a=>a.name).join(', ')}`;
-      document.getElementById('detailCover').style.backgroundImage = `url(${t.album.images[0]?.url})`;
-      document.getElementById('detailArtist').textContent = 'Artist: ' + t.artists.map(a=>a.name).join(', ');
-      document.getElementById('detailName').textContent = 'Track: ' + t.name;
-      document.getElementById('detailAlbum').textContent = 'Album: ' + t.album.name;
-      document.getElementById('detailDuration').textContent = 'Duration: ' + formatMS(t.duration_ms);
-      document.getElementById('coverArt').style.backgroundImage = `url(${t.album.images[0]?.url})`;
 
-      // highlight
+      // UI güncelle
+      document.getElementById('nowTitle').textContent =
+        `${t.name} — ${t.artists.map(a => a.name).join(', ')}`;
+      document.getElementById('detailCover').style.backgroundImage =
+        `url(${t.album.images[0]?.url})`;
+      document.getElementById('detailArtist').textContent =
+        'Artist: ' + t.artists.map(a => a.name).join(', ');
+      document.getElementById('detailName').textContent =
+        'Track: ' + t.name;
+      document.getElementById('detailAlbum').textContent =
+        'Album: ' + t.album.name;
+      document.getElementById('detailDuration').textContent =
+        'Duration: ' + formatMS(t.duration_ms);
+      document.getElementById('coverArt').style.backgroundImage =
+        `url(${t.album.images[0]?.url})`;
+
       renderPlaylists();
       renderTracks();
 
-      // reset & start polling position
       clearInterval(updateInterval);
-      document.getElementById('positionDisplay').textContent = `0 / ${formatMS(t.duration_ms)}`;
+      document.getElementById('positionDisplay').textContent =
+        `00:00 / ${formatMS(t.duration_ms)}`;
       updateInterval = setInterval(updatePosition, 1000);
     }
 
-    // Update playback position from Spotify
+    // Update playback position
     function updatePosition() {
-      fetch('https://api.spotify.com/v1/me/player', { headers:{ 'Authorization':'Bearer '+window.accessToken }})
-        .then(r=>r.json())
-        .then(state => {
-          const posSec = Math.floor(state.progress_ms/1000);
-          document.getElementById('positionDisplay').textContent = `${posSec} / ${formatMS(currentDurationSec*1000)}`;
-        })
-        .catch(_=>{/*silent*/});
+      fetch('https://api.spotify.com/v1/me/player', {
+        headers:{ 'Authorization':'Bearer '+window.accessToken }
+      })
+      .then(r => r.json())
+      .then(state => {
+        const elapsedMs = state.progress_ms || 0;
+        document.getElementById('positionDisplay').textContent =
+          `${formatMS(elapsedMs)} / ${formatMS(currentDurationSec * 1000)}`;
+      })
+      .catch(() => {/* silent */});
     }
 
-    // Controls
-    document.getElementById('prevBtn').addEventListener('click', ()=>playTrack((currentIndex-1+tracks.length)%tracks.length));
-    document.getElementById('nextBtn').addEventListener('click', ()=>playTrack((currentIndex+1)%tracks.length));
-
-    // Shuffle toggle
-    document.getElementById('shuffleBtn').addEventListener('click', async () => {
-      shuffleOn = !shuffleOn;
-      await fetch(`https://api.spotify.com/v1/me/player/shuffle?state=${shuffleOn}`, {
-        method:'PUT', headers:{ 'Authorization':'Bearer '+window.accessToken }
-      });
-      document.getElementById('shuffleBtn').classList.toggle('active', shuffleOn);
-    });
-
-    // Repeat toggle (on/off)
-    document.getElementById('repeatBtn').addEventListener('click', async () => {
-      repeatOn = !repeatOn;
-      const state = repeatOn ? 'context' : 'off';
-      await fetch(`https://api.spotify.com/v1/me/player/repeat?state=${state}`, {
-        method:'PUT', headers:{ 'Authorization':'Bearer '+window.accessToken }
-      });
-      document.getElementById('repeatBtn').classList.toggle('active', repeatOn);
-    });
+    // Previous / Next controls
+    document.getElementById('prevBtn')
+      .addEventListener('click', () => playTrack((currentIndex - 1 + tracks.length) % tracks.length));
+    document.getElementById('nextBtn')
+      .addEventListener('click', () => playTrack((currentIndex + 1) % tracks.length));
   </script>
 </body>
 </html>
