@@ -1,0 +1,181 @@
+<!-- File: index.html -->
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
+  <title>Wazder Spotify Player</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #000;
+      color: #fff;
+      position: relative;
+    }
+    #containers {
+      display: flex;
+      gap: 20px;
+    }
+    #playlistContainer, #trackContainer {
+      width: 300px;
+      max-height: 400px;
+      overflow-y: auto;
+      background-color: #111;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .playlist-item, .track-item {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      margin-bottom: 5px;
+      border: 2px solid #333;
+      border-radius: 4px;
+      position: relative;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .playlist-item span, .track-item span {
+      display: inline-block;
+      white-space: nowrap;
+    }
+    /* Çalan playlist */
+    .playlist-item.playing-playlist { border-color: #1DB954; }
+    .playlist-item.playing-playlist::after { content: " 🔊"; right: 10px; top: 50%; transform: translateY(-50%); }
+    /* Seçili playlist */
+    .playlist-item.selected-playlist { border-color: brown; }
+    .playlist-item.selected-playlist::after { content: " 📂"; right: 10px; top: 50%; transform: translateY(-50%); }
+    /* Hem çalıyor hem seçili */
+    .playlist-item.playing-playlist.selected-playlist {
+      background-color: #1DB954;
+      color: #000;
+      border-color: #1DB954;
+    }
+    .playlist-item.playing-playlist.selected-playlist::after { content: " 🔊📂"; right: 10px; top: 50%; transform: translateY(-50%); }
+
+    /* Çalan track */
+    .track-item.playing-track { background-color: #1DB954; color: #000; }
+    .track-item.playing-track::after { content: " ▶️"; right: 10px; top: 50%; transform: translateY(-50%); }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 4px;
+      background-color: #1DB954;
+      color: #fff;
+      cursor: pointer;
+    }
+    #prevButton, #nextButton {
+      position: absolute;
+      top: 20px;
+    }
+    #prevButton { right: 120px; }
+    #nextButton { right: 20px; }
+
+    @keyframes marquee {
+      0%   { transform: translateX(0%); }
+      100% { transform: translateX(-100%); }
+    }
+    .playlist-item:hover span,
+    .track-item:hover span,
+    .playlist-item.playing-playlist span,
+    .track-item.playing-track span {
+      animation: marquee 5s linear infinite;
+    }
+  </style>
+</head>
+<body>
+  <button id="loginBtn">Spotify Login</button>
+
+  <div id="app" style="display:none;">
+    <h2>Playliste Connection works</h2>
+    <div id="containers">
+      <div>
+        <h3>Playlists</h3>
+        <div id="playlistContainer"></div>
+      </div>
+      <div>
+        <h3>Tracks</h3>
+        <div id="trackContainer"></div>
+      </div>
+    </div>
+    <button id="prevButton">Previous</button>
+    <button id="nextButton">Next</button>
+  </div>
+
+  <script>
+    // Global state
+    let playlists = [], currentTracks = [];
+    let selectedPlaylistId = '', playingPlaylistId = '';
+    let currentTrackUri = '', currentIndex = 0;
+
+    // PKCE helpers (generateRandomString, sha256)...
+
+    // Handle redirect & exchange code
+    (async function(){
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      if (!code) return;
+      const clientId    = '6210ee0b3a6e4436b48176ea6bf02d93';
+      const redirectUri = window.location.origin + window.location.pathname;
+      const verifier    = localStorage.getItem('spotify_code_verifier');
+      try {
+        const body = new URLSearchParams({
+          grant_type:    'authorization_code',
+          code, redirect_uri: redirectUri,
+          client_id:     clientId,
+          code_verifier: verifier
+        });
+        const resp = await fetch('https://accounts.spotify.com/api/token', {
+          method:'POST',
+          headers:{'Content-Type':'application/x-www-form-urlencoded'},
+          body:body.toString()
+        });
+        const data = await resp.json();
+        if (!data.access_token) throw data;
+        // URL parametresini temizle
+        window.history.replaceState({}, '', window.location.pathname);
+        window.accessToken = data.access_token;
+        document.getElementById('loginBtn').style.display = 'none';
+        document.getElementById('app').style.display    = 'block';
+        fetchPlaylists();
+      } catch(e){ console.error(e); alert('Token alınamadı.'); }
+    })();
+
+    // Login + PKCE
+    document.getElementById('loginBtn').addEventListener('click', async ()=>{
+      const clientId    = '6210ee0b3a6e4436b48176ea6bf02d93';
+      const redirectUri = window.location.origin + window.location.pathname;
+      const state       = generateRandomString(16);
+      const verifier    = generateRandomString(64);
+      localStorage.setItem('spotify_code_verifier', verifier);
+      const challenge = await sha256(verifier);
+      const scope     = 'playlist-read-private user-modify-playback-state';
+      const authUrl =
+        'https://accounts.spotify.com/authorize?response_type=code'
+        + `&client_id=${encodeURIComponent(clientId)}`
+        + `&scope=${encodeURIComponent(scope)}`
+        + `&redirect_uri=${encodeURIComponent(redirectUri)}`
+        + `&state=${encodeURIComponent(state)}`
+        + `&code_challenge=${encodeURIComponent(challenge)}`
+        + `&code_challenge_method=S256`;
+      window.location = authUrl;
+    });
+
+    // Fetch + render playlists
+    function fetchPlaylists(){ /* aynı */ }
+    function renderPlaylists(){ /* aynı */ }
+
+    // Toggle, load, render tracks, play, prev/next
+    function togglePlaylist(id){ /* aynı */ }
+    function loadTracks(id){ /* aynı */ }
+    function renderTracks(){ /* aynı */ }
+    async function playTrack(idx){ /* aynı */ }
+    document.getElementById('prevButton').addEventListener('click',()=>{ /* aynı */ });
+    document.getElementById('nextButton').addEventListener('click',()=>{ /* aynı */ });
+  </script>
+</body>
+</html>
