@@ -4,11 +4,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
-  <title>Wazder Spotify Player</title>
+  <title>wazder's Spotify Controller</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #000; color: #fff; position: relative; }
-    #welcome { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: #1DB954; }
-    #loginBtn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 10px 20px; font-size: 16px; border: none; border-radius: 4px; background-color: #1DB954; color: #fff; cursor: pointer; }
+    /* Login ekranı ayarları */
+    #welcome { position: absolute; top: 25%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: #1DB954; }
+    #loginBtn { position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%); padding: 10px 20px; font-size: 16px; border: none; border-radius: 4px; background-color: #1DB954; color: #fff; cursor: pointer; }
+    /* Uygulama gövdesi */
     #app { display: none; }
     #playerInfo { display: flex; align-items: center; background-color: #111; padding: 10px; border-radius: 4px; margin-bottom: 20px; }
     #playerInfo img { width: 64px; height: 64px; border-radius: 4px; margin-right: 10px; }
@@ -22,8 +24,6 @@
     .playlist-item.playing-playlist::after { content: " 🔊"; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); }
     .playlist-item.selected-playlist { border-color: brown; }
     .playlist-item.selected-playlist::after { content: " 📂"; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); }
-    .playlist-item.playing-playlist.selected-playlist { background-color: #1DB954; color: #000; border-color: #1DB954; }
-    .playlist-item.playing-playlist.selected-playlist::after { content: " 🔊📂"; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); }
     .track-item.playing-track { background-color: #1DB954; color: #000; }
     .track-item.playing-track::after { content: " ▶️"; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); }
     @keyframes marquee { 0% { transform: translateX(0%); } 100% { transform: translateX(-100%); } }
@@ -36,7 +36,7 @@
   </style>
 </head>
 <body>
-  <div id="welcome">Welcome to Wazder's Spotify Controller</div>
+  <div id="welcome">welcome to wazder's spotify controller</div>
   <button id="loginBtn">Spotify Login</button>
   <div id="app">
     <div id="playerInfo">
@@ -44,7 +44,7 @@
       <div class="info">
         <div id="trackName">Şarkı: -</div>
         <div id="trackArtist">Sanatçı: -</div>
-        <div id="trackTime">0 / 0 saniye</div>
+        <div id="trackTime">00:00 / 00:00</div>
       </div>
       <button id="prevButton">Önceki</button>
       <button id="nextButton">Sonraki</button>
@@ -65,11 +65,18 @@
     for (let i = 0; i < len; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
     return result;
   }
+
   async function sha256(str) {
     const buf = new TextEncoder().encode(str);
     const hash = await crypto.subtle.digest('SHA-256', buf);
     const b64 = btoa(String.fromCharCode(...new Uint8Array(hash)));
     return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
   (async function() {
@@ -81,12 +88,17 @@
     const verifier = localStorage.getItem('spotify_code_verifier');
     try {
       const body = new URLSearchParams({ grant_type: 'authorization_code', code, redirect_uri: redirectUri, client_id: clientId, code_verifier: verifier });
-      const resp = await fetch('https://accounts.spotify.com/api/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() });
+      const resp = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      });
       const data = await resp.json();
       if (!data.access_token) throw data;
       window.history.replaceState({}, '', window.location.pathname);
       window.accessToken = data.access_token;
       document.getElementById('loginBtn').style.display = 'none';
+      document.getElementById('welcome').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       fetchPlaylists();
     } catch (e) {
@@ -121,17 +133,23 @@
       div.className = 'playlist-item' + (pl.id === playingPlaylistId ? ' playing-playlist' : '') + (pl.id === selectedPlaylistId ? ' selected-playlist' : '');
       const span = document.createElement('span'); span.textContent = `${i+1}. ${pl.name}`;
       div.appendChild(span);
-      div.addEventListener('click', () => togglePlaylist(pl.id));
+      // scrollable kontrol
+      setTimeout(() => { if (span.scrollWidth > div.clientWidth) div.classList.add('scrollable'); }, 0);
+      div.onclick = () => togglePlaylist(pl.id);
       container.appendChild(div);
-      requestAnimationFrame(() => { if (span.scrollWidth > span.clientWidth) div.classList.add('scrollable'); });
     });
-    if (!selectedPlaylistId) document.getElementById('trackContainer').innerHTML = '';
+    document.getElementById('trackContainer').innerHTML = '';
   }
 
   function togglePlaylist(id) {
     if (selectedPlaylistId === id) {
-      selectedPlaylistId = ''; currentTracks = []; renderPlaylists(); document.getElementById('trackContainer').innerHTML = '';
-    } else { selectedPlaylistId = id; loadTracks(id); }
+      selectedPlaylistId = '';
+      currentTracks = [];
+      renderPlaylists();
+    } else {
+      selectedPlaylistId = id;
+      loadTracks(id);
+    }
   }
 
   function loadTracks(id) {
@@ -141,11 +159,12 @@
         currentTracks = data.items.map(i => ({
           uri: i.track.uri,
           name: i.track.name,
-          artists: i.track.artists.map(a => a.name).join(', '),
+          artist: i.track.artists.map(a => a.name).join(', '),
           duration: Math.floor(i.track.duration_ms / 1000),
-          image: i.track.album.images[0]?.url || ''
+          cover: i.track.album.images[0]?.url || ''
         }));
-        renderPlaylists(); renderTracks();
+        renderPlaylists();
+        renderTracks();
       })
       .catch(err => { console.error(err); alert('Şarkılar yüklenemedi: ' + err); });
   }
@@ -155,28 +174,45 @@
     currentTracks.forEach((t, i) => {
       const div = document.createElement('div');
       div.className = 'track-item' + (i === currentIndex ? ' playing-track' : '');
-      const span = document.createElement('span'); span.textContent = `${i+1}. ${t.name}`;
+      const span = document.createElement('span'); span.textContent = `${i+1}. ${t.name} (${formatTime(t.duration)})`;
       div.appendChild(span);
-      div.addEventListener('click', () => showTrackInfo(i));
+      setTimeout(() => { if (span.scrollWidth > div.clientWidth) div.classList.add('scrollable'); }, 0);
+      div.onclick = () => playTrack(i);
       container.appendChild(div);
-      requestAnimationFrame(() => { if (span.scrollWidth > span.clientWidth) div.classList.add('scrollable'); });
     });
   }
 
-  function showTrackInfo(idx) {
-    const t = currentTracks[idx]; currentIndex = idx;
-    document.getElementById('coverImg').src = t.image;
-    document.getElementById('trackName').textContent = `Şarkı: ${t.name}`;
-    document.getElementById('trackArtist').textContent = `Sanatçı: ${t.artists}`;
-    document.getElementById('trackTime').textContent = `0 / ${t.duration} saniye`;
-    document.querySelectorAll('.track-item').forEach((el, i) => el.classList.toggle('playing-track', i === idx));
+  async function playTrack(idx) {
+    const t = currentTracks[idx];
+    try {
+      await fetch('https://api.spotify.com/v1/me/player/play', {
+        method: 'PUT',
+        headers: { 'Authorization': 'Bearer ' + window.accessToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uris: [t.uri] })
+      });
+      currentIndex = idx;
+      playingPlaylistId = selectedPlaylistId;
+      // info güncelle
+      document.getElementById('trackName').textContent = `Şarkı: ${t.name}`;
+      document.getElementById('trackArtist').textContent = `Sanatçı: ${t.artist}`;
+      document.getElementById('trackTime').textContent = `0:00 / ${formatTime(t.duration)}`;
+      document.getElementById('coverImg').src = t.cover;
+      renderPlaylists();
+      renderTracks();
+    } catch (err) {
+      console.error(err);
+      alert('Çalma hatası: ' + err);
+    }
   }
 
   document.getElementById('prevButton').addEventListener('click', () => {
-    if (currentTracks.length) showTrackInfo((currentIndex - 1 + currentTracks.length) % currentTracks.length);
+    if (!currentTracks.length) return;
+    playTrack((currentIndex - 1 + currentTracks.length) % currentTracks.length);
   });
+
   document.getElementById('nextButton').addEventListener('click', () => {
-    if (currentTracks.length) showTrackInfo((currentIndex + 1) % currentTracks.length);
+    if (!currentTracks.length) return;
+    playTrack((currentIndex + 1) % currentTracks.length);
   });
 </script>
 </body>
