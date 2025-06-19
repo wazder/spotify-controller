@@ -363,7 +363,7 @@
     document.getElementById('prevBtn').onclick = () =>
       playTrack((currentIndex-1+tracks.length)%tracks.length);
     document.getElementById('nextBtn').onclick = () =>
-      playTrack((currentIndex+tracks.length)%tracks.length);
+      playTrack((currentIndex + 1) % tracks.length);
   </script>
 </body>
 </html>
