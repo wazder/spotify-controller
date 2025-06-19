@@ -28,10 +28,13 @@ Control your Spotify playback, browse playlists and tracks, and view detailed tr
 
 ### Prerequisites
 
-1. A Spotify Developer account  
-2. A registered Spotify “Web” app with:
-   - Redirect URI set to `https://wazder.github.io/spotify-controller/`
+1. A Spotify Developer account (no payment required)  
+3. A registered Spotify “Web” app with:
+   - Redirect URI set to your own web service partner
+     - Example : `https://wazder.github.io/spotify-controller/`
    - Client ID copied
+   - ![warning](warning.png)
+    - You need to change this line with your own client id from https://developer.spotify.com
 
 ### Installation
 
