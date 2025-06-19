@@ -22,8 +22,7 @@ Control your Spotify playback, browse playlists and tracks, and view detailed tr
 
 ## Demo
 
-> Live demo: https://wazder.github.io/spotify-controller/  
-> (Redirect URI must match your registered app settings.)
+> demo video : https://youtu.be/qJLQCKLno9c
 
 ## Getting Started
 
