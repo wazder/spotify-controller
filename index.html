@@ -1,4 +1,4 @@
-<!-- index.html dosyası -->
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -215,7 +215,7 @@
   <div id="loginContainer">
     <h1>welcome to wazder's spotify controller</h1>
     <div id="skipContainer">
-      <label id="skipLabel">Şarkı bitimine <span id="skipValue">6</span> saniye kala geç</label>
+      <label id="skipLabel">manual crossfade: <span id="skipValue">6</span></label>
       <input type="range" id="skipSlider" min="0" max="9" value="6" />
     </div>
     <button id="loginBtn">Spotify Login</button>
@@ -258,9 +258,13 @@
     let skipThreshold = 6;
     const slider = document.getElementById('skipSlider');
     const skipValue = document.getElementById('skipValue');
+    const skipLabel = document.getElementById('skipLabel');
+
     slider.oninput = () => {
       skipThreshold = parseInt(slider.value);
       skipValue.textContent = skipThreshold;
+      // istersen tüm metni güncelle:
+      skipLabel.textContent = `manual crossfade: ${skipThreshold}`;
     };
 
     let playlists = [], nextPlaylistsUrl = null;
