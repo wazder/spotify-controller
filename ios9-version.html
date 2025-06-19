@@ -88,7 +88,7 @@
     function fmt(ms) { var t=Math.floor(ms/1000),m=Math.floor(t/60),s=t%60;return (m<10?'0':'')+m+':'+(s<10?'0':'')+s; }
     function xhr(u,m,b,cb){ var r=new XMLHttpRequest(); r.open(m,u,true); if(accessToken)r.setRequestHeader('Authorization','Bearer '+accessToken); if(b)r.setRequestHeader('Content-Type','application/json'); r.onreadystatechange=function(){ if(r.readyState===4){ if(r.status>=200&&r.status<300)cb(null,JSON.parse(r.responseText));else cb(r.status);} }; r.send(b?JSON.stringify(b):null); }
 
-    document.getElementById('loginBtn').onclick=function(){
+    document.getElementById('loginBtn').onclick=function(){ alert('Login button clicked');
       var cid='46a1e07e779c46998b413317a78b8a26', rd=location.origin+location.pathname;
       var arr=new Uint8Array(64);cryptoObj.getRandomValues(arr);var v='';for(var i=0;i<64;i++){var h=arr[i].toString(16);v+=(h.length===1?'0':'')+h;}localStorage.setItem('spotify_code_verifier',v);
       var ch=base64url(sha256(v));
