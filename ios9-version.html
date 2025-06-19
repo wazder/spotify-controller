@@ -1,4 +1,4 @@
-<!-- ios9.version.html -->
+<!-- ios9-version.html -->
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -127,7 +127,6 @@
     <h1>welcome to wazder's spotify controller</h1>
     <button id="loginBtn">Spotify Login</button>
   </div>
-
   <div id="app">
     <div id="nowPlaying">
       <div id="coverArt"></div>
@@ -155,40 +154,45 @@
       </div>
       <div class="column" id="infoColumn">
         <h3>Track Info</h3>
-        <div id="detailCover"
-             style="width:80%;padding-bottom:80%;background:#222;
-                    background-size:cover;background-position:center;
-                    border-radius:4px;margin:0 auto 10px;"></div>
+        <div id="detailCover" style="width:80%;padding-bottom:80%;background:#222;background-size:cover;background-position:center;border-radius:4px;margin:0 auto 10px;"></div>
         <p id="detailInfo">—</p>
       </div>
     </div>
   </div>
-
   <div id="footer">made by wazder ❤</div>
-
   <script>
-
-    document.getElementById('loginBtn').addEventListener('click', () => {
-      const clientId = '46a1e07e779c46998b413317a78b8a26';
-      const redirectUri = window.location.origin + window.location.pathname;
-      const scope = [
-        'playlist-read-private',
-        'user-modify-playback-state',
-        'user-read-playback-state'
-      ].join(' ');
-      const params = new URLSearchParams({
+    function buildQuery(params) {
+      var str = [];
+      for (var key in params) {
+        if (params.hasOwnProperty(key)) {
+          str.push(encodeURIComponent(key) + '=' + encodeURIComponent(params[key]));
+        }
+      }
+      return str.join('&');
+    }
+    document.getElementById('loginBtn').addEventListener('click', function() {
+      var clientId    = '46a1e07e779c46998b413317a78b8a26';
+      var redirectUri = window.location.origin + window.location.pathname;
+      var scope       = 'playlist-read-private user-modify-playback-state user-read-playback-state';
+      var params = {
         response_type: 'token',
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        scope: scope
-      });
-      window.location = 'https://accounts.spotify.com/authorize?' + params.toString();
+        client_id:      clientId,
+        redirect_uri:   redirectUri,
+        scope:          scope
+      };
+      window.location = 'https://accounts.spotify.com/authorize?' + buildQuery(params);
     });
-
-    window.addEventListener('load', () => {
-      if (window.location.hash) {
-        const hashParams = new URLSearchParams(window.location.hash.slice(1));
-        const token = hashParams.get('access_token');
+    window.addEventListener('load', function() {
+      if (window.location.hash && window.location.hash.indexOf('access_token') !== -1) {
+        var hashParts = window.location.hash.substring(1).split('&');
+        var token = '';
+        for (var i = 0; i < hashParts.length; i++) {
+          var kv = hashParts[i].split('=');
+          if (decodeURIComponent(kv[0]) === 'access_token') {
+            token = decodeURIComponent(kv[1]);
+            break;
+          }
+        }
         if (token) {
           window.accessToken = token;
           window.history.replaceState(null, '', window.location.pathname);
@@ -198,161 +202,145 @@
         }
       }
     });
-
-    // Spotify crossfade should be less than `skipThreshold`.
     const skipThreshold = 3 * 1000;
     let playlists = [], nextPlaylistsUrl = null;
     let tracks = [], nextTracksUrl = null;
     let selectedPlaylistId = '', playingContextUri = '';
     let currentIndex = 0, currentDurationMs = 0, updateInterval = null;
     let showInfoView = false;
-
     function formatMS(ms) {
-      const totalSec = Math.floor(ms/1000),
-            m = Math.floor(totalSec/60),
-            s = totalSec % 60;
+      const totalSec = Math.floor(ms/1000), m = Math.floor(totalSec/60), s = totalSec % 60;
       return `${m<10?'0':''}${m}:${s<10?'0':''}${s}`;
     }
-
     function updateView() {
       document.getElementById('trackColumn').style.display = showInfoView ? 'none' : 'block';
-      document.getElementById('infoColumn').style.display = showInfoView ? 'block' : 'none';
+      document.getElementById('infoColumn').style.display  = showInfoView ? 'block': 'none';
     }
-    document.getElementById('moreBtn').addEventListener('click', () => {
-      showInfoView = !showInfoView;
-      updateView();
+    document.getElementById('moreBtn').addEventListener('click', function() {
+      showInfoView = !showInfoView; updateView();
     });
-
     function fetchPlaylists(url) {
-      fetch(url||'https://api.spotify.com/v1/me/playlists?limit=50', {
+      fetch(url || 'https://api.spotify.com/v1/me/playlists?limit=50', {
         headers: { 'Authorization': 'Bearer ' + window.accessToken }
       })
-      .then(r => r.json())
-      .then(data => {
-        playlists.push(...data.items);
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        playlists.push.apply(playlists, data.items);
         nextPlaylistsUrl = data.next;
         renderPlaylists();
         document.getElementById('morePlaylistsBtn').style.display = nextPlaylistsUrl ? 'block' : 'none';
       })
-      .catch(e => alert('Playlist yüklenemedi: ' + e));
+      .catch(function(e) { alert('Playlist yüklenemedi: ' + e); });
     }
-    document.getElementById('morePlaylistsBtn').onclick = () => fetchPlaylists(nextPlaylistsUrl);
-
+    document.getElementById('morePlaylistsBtn').onclick = function() { fetchPlaylists(nextPlaylistsUrl); };
     function renderPlaylists() {
-      const c = document.getElementById('playlistContainer');
+      var c = document.getElementById('playlistContainer');
       c.innerHTML = '';
-      playlists.forEach(pl => {
-        const div = document.createElement('div');
-        div.className = 'item'
-          + (pl.id===selectedPlaylistId?' selected':'')
-          + (pl.id===playingContextUri?' playing':'');
-        const span = document.createElement('span');
+      playlists.forEach(function(pl) {
+        var div = document.createElement('div');
+        div.className = 'item' +
+          (pl.id===selectedPlaylistId ? ' selected' : '') +
+          (pl.id===playingContextUri ? ' playing' : '');
+        var span = document.createElement('span');
         span.textContent = pl.name;
         div.appendChild(span);
         if (pl.description) {
-          const ds = document.createElement('span');
+          var ds = document.createElement('span');
           ds.className = 'desc';
-          ds.textContent = ', '+pl.description;
+          ds.textContent = ', ' + pl.description;
           div.appendChild(ds);
         }
-        div.onclick = () => selectPlaylist(pl);
+        div.onclick = function() { selectPlaylist(pl); };
         c.appendChild(div);
       });
     }
-
     function selectPlaylist(pl) {
       selectedPlaylistId = pl.id;
       tracks = []; nextTracksUrl = null;
       showInfoView = false; updateView();
       renderPlaylists();
-      fetchTracks(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=50`);
+      fetchTracks('https://api.spotify.com/v1/playlists/' + pl.id + '/tracks?limit=50');
     }
-
     function fetchTracks(url) {
       fetch(url, {
         headers: { 'Authorization': 'Bearer ' + window.accessToken }
       })
-      .then(r => r.json())
-      .then(data => {
-        tracks.push(...data.items);
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        tracks.push.apply(tracks, data.items);
         nextTracksUrl = data.next;
         renderTracks();
         document.getElementById('moreTracksBtn').style.display = nextTracksUrl ? 'block' : 'none';
       })
-      .catch(e => alert('Şarkılar yüklenemedi: ' + e));
+      .catch(function(e) { alert('Şarkılar yüklenemedi: ' + e); });
     }
-    document.getElementById('moreTracksBtn').onclick = () => fetchTracks(nextTracksUrl);
-
+    document.getElementById('moreTracksBtn').onclick = function() { fetchTracks(nextTracksUrl); };
     function renderTracks() {
-      const c = document.getElementById('trackContainer');
-      document.querySelector('#trackColumn h3').textContent = `Tracks (${tracks.length})`;
+      var c = document.getElementById('trackContainer');
+      document.querySelector('#trackColumn h3').textContent = 'Tracks (' + tracks.length + ')';
       c.innerHTML = '';
-      tracks.forEach((i, idx) => {
-        const t = i.track;
-        const div = document.createElement('div');
-        div.className = 'item' + (idx===currentIndex?' playing':'');
-        const span = document.createElement('span');
+      tracks.forEach(function(i, idx) {
+        var t = i.track;
+        var div = document.createElement('div');
+        div.className = 'item' + (idx===currentIndex ? ' playing' : '');
+        var span = document.createElement('span');
         span.textContent = t.name;
         div.appendChild(span);
-        div.onclick = () => playTrack(idx);
+        div.onclick = function() { playTrack(idx); };
         c.appendChild(div);
       });
     }
-
-    async function playTrack(idx) {
-      const t = tracks[idx].track;
+    function playTrack(idx) {
+      var t = tracks[idx].track;
       currentDurationMs = t.duration_ms;
-      await fetch('https://api.spotify.com/v1/me/player/play', {
-        method:'PUT',
-        headers:{
-          'Authorization':'Bearer '+window.accessToken,
-          'Content-Type':'application/json'
+      fetch('https://api.spotify.com/v1/me/player/play', {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Bearer ' + window.accessToken,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          context_uri: `spotify:playlist:${selectedPlaylistId}`,
-          offset:{ position:idx }
+          context_uri: 'spotify:playlist:' + selectedPlaylistId,
+          offset: { position: idx }
         })
       });
       playingContextUri = selectedPlaylistId;
       currentIndex = idx;
-
-      const trackName = t.name;
-      document.getElementById('nowTitle').textContent = trackName;
-
-      const detailLine = `${t.artists.map(a=>a.name).join(', ')} / ${t.album.name} / ${t.name}`;
-      document.getElementById('detailCover').style.backgroundImage = `url(${t.album.images[0]?.url})`;
-      document.getElementById('coverArt').style.backgroundImage = `url(${t.album.images[0]?.url})`;
-      document.getElementById('detailInfo').textContent = detailLine;
-
+      document.getElementById('nowTitle').textContent = t.name;
+      document.getElementById('coverArt').style.backgroundImage = 'url(' + t.album.images[0].url + ')';
+      document.getElementById('detailCover').style.backgroundImage = 'url(' + t.album.images[0].url + ')';
+      document.getElementById('detailInfo').textContent =
+        t.artists.map(function(a){ return a.name; }).join(', ') + ' / ' +
+        t.album.name + ' / ' + t.name;
       renderPlaylists(); renderTracks();
       clearInterval(updateInterval);
-      document.getElementById('positionDisplay').textContent = `00:00 / ${formatMS(t.duration_ms)}`;
-      updateInterval = setInterval(updatePosition, 1000);
+      document.getElementById('positionDisplay').textContent = '00:00 / ' + formatMS(t.duration_ms);
+      updateInterval = setInterval(function(){ updatePosition(); }, 1000);
     }
-
     function updatePosition() {
       fetch('https://api.spotify.com/v1/me/player', {
-        headers: { 'Authorization':'Bearer '+window.accessToken }
+        headers: { 'Authorization': 'Bearer ' + window.accessToken }
       })
-      .then(r => r.json())
-      .then(state =>{
-        const elapsed = state.progress_ms||0;
-        if(elapsed >= currentDurationMs - skipThreshold){
+      .then(function(r){ return r.json(); })
+      .then(function(state){
+        var elapsed = state.progress_ms || 0;
+        if (elapsed >= currentDurationMs - skipThreshold) {
           clearInterval(updateInterval);
-          playTrack((currentIndex+1)%tracks.length);
+          playTrack((currentIndex+1) % tracks.length);
           return;
         }
         document.getElementById('positionDisplay').textContent =
-          `${formatMS(elapsed)} / ${formatMS(currentDurationMs)}`;
-        document.getElementById('progress').style.width =
-          `${(elapsed/currentDurationMs)*100}%`;
-      }).catch(()=>{});
+          formatMS(elapsed) + ' / ' + formatMS(currentDurationMs);
+        document.getElementById('progress').style.width = (elapsed/currentDurationMs*100) + '%';
+      })
+      .catch(function(){});
     }
-
-    document.getElementById('prevBtn').onclick = () =>
+    document.getElementById('prevBtn').onclick = function() {
       playTrack((currentIndex-1+tracks.length)%tracks.length);
-    document.getElementById('nextBtn').onclick = () =>
-      playTrack((currentIndex+tracks.length)%tracks.length);
+    };
+    document.getElementById('nextBtn').onclick = function() {
+      playTrack((currentIndex+1)%tracks.length);
+    };
   </script>
 </body>
 </html>
