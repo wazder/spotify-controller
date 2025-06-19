@@ -3,7 +3,7 @@
 A lightweight, client-side Spotify controller built with vanilla JavaScript, HTML and CSS.  
 Control your Spotify playback, browse playlists and tracks, and view detailed track info—all without leaving your browser.
 
-![Project Logo](logo.png)
+![Project Logo](images/logo.png)
 
 ## Features
 
@@ -24,6 +24,8 @@ Control your Spotify playback, browse playlists and tracks, and view detailed tr
 
 > demo video : https://youtu.be/qJLQCKLno9c
 
+> ![Screenshot 6](images/Screenshot6.png)
+
 ## Getting Started
 
 ### Prerequisites
@@ -33,7 +35,7 @@ Control your Spotify playback, browse playlists and tracks, and view detailed tr
    - Redirect URI set to your own web service partner
      - Example : `https://wazder.github.io/spotify-controller/`
    - Client ID copied
-   - ![warning](warning.png)
+   - ![warning](images/warning.png)
     - You need to change this line with your own client id from https://developer.spotify.com
 
 ### Installation
