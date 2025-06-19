@@ -413,15 +413,13 @@
         .then(r => r.json())
         .then(state => {
           const elapsed = state.progress_ms || 0;
+          // Eşitlik durumunda da sonraki şarkıya geç
           if (elapsed >= currentDurationMs) {
             clearInterval(updateInterval);
-            // bir sonraki indeksi hesapla, son şarkıysa sıfıra sar
             const nextIdx = (currentIndex + 1) % tracks.length;
-            // playTrack hem çalmayı başlatır hem de UI’ı günceller
             playTrack(nextIdx);
             return;
           }
-          // normal akış: ilerlemeyi güncelle
           document.getElementById('positionDisplay').textContent = `${formatMS(elapsed)} / ${formatMS(currentDurationMs)}`;
           const pct = (elapsed / currentDurationMs) * 100;
           document.getElementById('progress').style.width = `${pct}%`;
