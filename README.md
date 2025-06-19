@@ -1,4 +1,4 @@
-# Wazder’s Spotify Controller
+# wazder’s Spotify Controller
 
 A lightweight, client-side Spotify controller built with vanilla JavaScript, HTML and CSS.  
 Control your Spotify playback, browse playlists and tracks, and view detailed track info—all without leaving your browser.
