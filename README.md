@@ -21,7 +21,7 @@ Control your Spotify playback, browse playlists and tracks, and view detailed tr
   Full-screen experience with mobile-friendly viewport settings.
 
 ## Demo
-![Screenshot6](images/Screenshot6.png)
+
 > demo video : https://youtu.be/qJLQCKLno9c
 
 ## Getting Started
