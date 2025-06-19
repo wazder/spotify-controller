@@ -31,7 +31,6 @@
       font-size: 2rem;
       text-align: center;
     }
-    /* Slider benzeri çizgi */
     #skipContainer {
       margin: 20px 0;
       display: flex;
@@ -42,6 +41,13 @@
       margin-bottom: 8px;
       font-size: 0.9rem;
       color: #ccc;
+    }
+    #warningMessage {
+      color: #888;
+      font-size: 0.8rem;
+      margin-bottom: 12px;
+      text-align: center;
+      width: 80%;
     }
     input[type="range"] {
       -webkit-appearance: none;
@@ -215,11 +221,15 @@
   <div id="loginContainer">
     <h1>welcome to wazder's spotify controller</h1>
     <div id="skipContainer">
-      <label id="skipLabel">manual crossfade: <span id="skipValue">6</span></label>
+      <label id="skipLabel">manual crossfade: 6</label>
       <input type="range" id="skipSlider" min="0" max="9" value="6" />
+    </div>
+    <div id="warningMessage">
+      Adjust the corssfade in your spotify settings to be less than the manual corssfade here.
     </div>
     <button id="loginBtn">Spotify Login</button>
   </div>
+
   <div id="app">
     <div id="nowPlaying">
       <div id="coverArt"></div>
@@ -252,18 +262,16 @@
       </div>
     </div>
   </div>
+
   <div id="footer">made by wazder with love <3</div>
 
   <script>
     let skipThreshold = 6;
     const slider = document.getElementById('skipSlider');
-    const skipValue = document.getElementById('skipValue');
     const skipLabel = document.getElementById('skipLabel');
 
     slider.oninput = () => {
       skipThreshold = parseInt(slider.value);
-      skipValue.textContent = skipThreshold;
-      // istersen tüm metni güncelle:
       skipLabel.textContent = `manual crossfade: ${skipThreshold}`;
     };
 
@@ -295,7 +303,11 @@
       const redirectUri = window.location.origin + window.location.pathname;
       const verifier = localStorage.getItem('spotify_code_verifier');
       const body = new URLSearchParams({ grant_type: 'authorization_code', code, redirect_uri: redirectUri, client_id: clientId, code_verifier: verifier });
-      const resp = await fetch('https://accounts.spotify.com/api/token', { method:'POST', headers:{ 'Content-Type':'application/x-www-form-urlencoded' }, body: body.toString() });
+      const resp = await fetch('https://accounts.spotify.com/api/token', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/x-www-form-urlencoded' },
+        body: body.toString()
+      });
       const data = await resp.json();
       if (!data.access_token) return alert('Token alınamadı.');
       window.history.replaceState({},'',window.location.pathname);
@@ -311,20 +323,31 @@
       const verifier = Array.from(crypto.getRandomValues(new Uint8Array(64)), dec => ('0' + dec.toString(16)).slice(-2)).join('');
       localStorage.setItem('spotify_code_verifier', verifier);
       const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
-      const challenge = btoa(String.fromCharCode(...new Uint8Array(hash))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-      window.location = `https://accounts.spotify.com/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&scope=${encodeURIComponent('playlist-read-private user-modify-playback-state user-read-playback-state')}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge_method=S256&code_challenge=${encodeURIComponent(challenge)}`;
+      const challenge = btoa(String.fromCharCode(...new Uint8Array(hash)))
+        .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+      window.location = `
+        https://accounts.spotify.com/authorize?
+        response_type=code
+        &client_id=${encodeURIComponent(clientId)}
+        &scope=${encodeURIComponent('playlist-read-private user-modify-playback-state user-read-playback-state')}
+        &redirect_uri=${encodeURIComponent(redirectUri)}
+        &code_challenge_method=S256
+        &code_challenge=${encodeURIComponent(challenge)}
+      `.replace(/\s+/g,'');
     });
 
     function fetchPlaylists(url) {
-      fetch(url||'https://api.spotify.com/v1/me/playlists?limit=50',{headers:{'Authorization':'Bearer '+window.accessToken}})
-        .then(r => r.json())
-        .then(data => {
-          playlists.push(...data.items);
-          nextPlaylistsUrl = data.next;
-          renderPlaylists();
-          document.getElementById('morePlaylistsBtn').style.display = nextPlaylistsUrl ? 'block' : 'none';
-        })
-        .catch(e => alert('Playlist yüklenemedi: ' + e));
+      fetch(url || 'https://api.spotify.com/v1/me/playlists?limit=50', {
+        headers: { 'Authorization': 'Bearer ' + window.accessToken }
+      })
+      .then(r => r.json())
+      .then(data => {
+        playlists.push(...data.items);
+        nextPlaylistsUrl = data.next;
+        renderPlaylists();
+        document.getElementById('morePlaylistsBtn').style.display = nextPlaylistsUrl ? 'block' : 'none';
+      })
+      .catch(e => alert('Playlist yüklenemedi: ' + e));
     }
     document.getElementById('morePlaylistsBtn').addEventListener('click', () => fetchPlaylists(nextPlaylistsUrl));
 
@@ -333,7 +356,9 @@
       c.innerHTML = '';
       playlists.forEach(pl => {
         const div = document.createElement('div');
-        div.className = 'item' + (pl.id === selectedPlaylistId ? ' selected' : '') + (pl.id === playingContextUri ? ' playing' : '');
+        div.className = 'item'
+          + (pl.id === selectedPlaylistId ? ' selected' : '')
+          + (pl.id === playingContextUri ? ' playing' : '');
         const span = document.createElement('span');
         span.textContent = pl.name;
         div.appendChild(span);
@@ -349,14 +374,27 @@
     }
 
     function selectPlaylist(pl) {
-      selectedPlaylistId = pl.id; tracks = []; nextTracksUrl = null; showInfoView = false; updateView(); renderPlaylists(); fetchTracks(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=50`);
+      selectedPlaylistId = pl.id;
+      tracks = [];
+      nextTracksUrl = null;
+      showInfoView = false;
+      updateView();
+      renderPlaylists();
+      fetchTracks(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=50`);
     }
 
     function fetchTracks(url) {
-      fetch(url,{headers:{'Authorization':'Bearer '+window.accessToken}})
-        .then(r => r.json())
-        .then(data => { tracks.push(...data.items); nextTracksUrl = data.next; renderTracks(); document.getElementById('moreTracksBtn').style.display = nextTracksUrl ? 'block' : 'none'; })
-        .catch(e => alert('Şarkılar yüklenemedi: ' + e));
+      fetch(url, {
+        headers: { 'Authorization': 'Bearer ' + window.accessToken }
+      })
+      .then(r => r.json())
+      .then(data => {
+        tracks.push(...data.items);
+        nextTracksUrl = data.next;
+        renderTracks();
+        document.getElementById('moreTracksBtn').style.display = nextTracksUrl ? 'block' : 'none';
+      })
+      .catch(e => alert('Şarkılar yüklenemedi: ' + e));
     }
     document.getElementById('moreTracksBtn').addEventListener('click', () => fetchTracks(nextTracksUrl));
 
@@ -364,34 +402,74 @@
       const c = document.getElementById('trackContainer');
       document.querySelector('#trackColumn h3').textContent = `Tracks (${tracks.length})`;
       c.innerHTML = '';
-      tracks.forEach((i, idx) => { const t = i.track; const div = document.createElement('div'); div.className = 'item' + (idx === currentIndex ? ' playing' : ''); const span = document.createElement('span'); span.textContent = t.name; div.appendChild(span); div.addEventListener('click', () => playTrack(idx)); c.appendChild(div); });
+      tracks.forEach((i, idx) => {
+        const t = i.track;
+        const div = document.createElement('div');
+        div.className = 'item' + (idx === currentIndex ? ' playing' : '');
+        const span = document.createElement('span');
+        span.textContent = t.name;
+        div.appendChild(span);
+        div.addEventListener('click', () => playTrack(idx));
+        c.appendChild(div);
+      });
     }
 
     async function playTrack(idx) {
-      const t = tracks[idx].track; currentDurationMs = t.duration_ms;
-      await fetch('https://api.spotify.com/v1/me/player/play',{method:'PUT',headers:{'Authorization':'Bearer '+window.accessToken,'Content-Type':'application/json'},body:JSON.stringify({context_uri:`spotify:playlist:${selectedPlaylistId}`,offset:{position:idx}})});
-      playingContextUri = selectedPlaylistId; currentIndex = idx;
+      const t = tracks[idx].track;
+      currentDurationMs = t.duration_ms;
+      await fetch('https://api.spotify.com/v1/me/player/play', {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Bearer ' + window.accessToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          context_uri: `spotify:playlist:${selectedPlaylistId}`,
+          offset: { position: idx }
+        })
+      });
+      playingContextUri = selectedPlaylistId;
+      currentIndex = idx;
       const line = `${t.artists.map(a => a.name).join(', ')} / ${t.album.name} - ${t.name}`;
-      document.getElementById('nowTitle').textContent = line; document.getElementById('coverArt').style.backgroundImage = `url(${t.album.images[0]?.url})`; document.getElementById('detailCover').style.backgroundImage = `url(${t.album.images[0]?.url})`; document.getElementById('detailInfo').textContent = line;
-      renderPlaylists(); renderTracks(); clearInterval(updateInterval); document.getElementById('positionDisplay').textContent = `00:00 / ${formatMS(t.duration_ms)}`; updateInterval = setInterval(updatePosition, 1000);
+      document.getElementById('nowTitle').textContent = line;
+      document.getElementById('coverArt').style.backgroundImage = `url(${t.album.images[0]?.url})`;
+      document.getElementById('detailCover').style.backgroundImage = `url(${t.album.images[0]?.url})`;
+      document.getElementById('detailInfo').textContent = line;
+      renderPlaylists();
+      renderTracks();
+      clearInterval(updateInterval);
+      document.getElementById('positionDisplay').textContent = `00:00 / ${formatMS(t.duration_ms)}`;
+      updateInterval = setInterval(updatePosition, 1000);
     }
 
     function updatePosition() {
-      fetch('https://api.spotify.com/v1/me/player',{headers:{'Authorization':'Bearer '+window.accessToken}})
-        .then(r => r.json())
-        .then(state => {
-          const elapsed = state.progress_ms || 0;
-          if (elapsed >= currentDurationMs - (skipThreshold*1000)) {
-            clearInterval(updateInterval);
-            const nextIdx = (currentIndex + 1) % tracks.length;
-            const items = document.querySelectorAll('#trackContainer .item'); if (items[nextIdx]) items[nextIdx].click(); else playTrack(nextIdx); return; }
-          document.getElementById('positionDisplay').textContent = `${formatMS(elapsed)} / ${formatMS(currentDurationMs)}`;
-          document.getElementById('progress').style.width = `${(elapsed / currentDurationMs) * 100}%`;
-        }).catch(() => {});
+      fetch('https://api.spotify.com/v1/me/player', {
+        headers: { 'Authorization': 'Bearer ' + window.accessToken }
+      })
+      .then(r => r.json())
+      .then(state => {
+        const elapsed = state.progress_ms || 0;
+        const thresholdMs = skipThreshold * 1000;
+        if (elapsed >= currentDurationMs - thresholdMs) {
+          clearInterval(updateInterval);
+          const nextIdx = (currentIndex + 1) % tracks.length;
+          playTrack(nextIdx);
+          return;
+        }
+        document.getElementById('positionDisplay').textContent =
+          `${formatMS(elapsed)} / ${formatMS(currentDurationMs)}`;
+        document.getElementById('progress').style.width =
+          `${(elapsed / currentDurationMs) * 100}%`;
+      })
+      .catch(() => {});
     }
 
-    document.getElementById('prevBtn').addEventListener('click', () => playTrack((currentIndex - 1 + tracks.length) % tracks.length));
-    document.getElementById('nextBtn').addEventListener('click', () => playTrack((currentIndex + 1) % tracks.length));
+    document.getElementById('prevBtn').addEventListener('click', () =>
+      playTrack((currentIndex - 1 + tracks.length) % tracks.length)
+    );
+    document.getElementById('nextBtn').addEventListener('click', () =>
+      playTrack((currentIndex + 1) % tracks.length)
+    );
   </script>
 </body>
 </html>
