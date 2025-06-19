@@ -163,12 +163,9 @@
     </div>
   </div>
 
-  <div id="footer">made by wazder ❤</div>
+  <div id="footer">made by wazder</div>
 
   <script>
-    // Sabit redirect URI (Spotify Dashboard'a eklenmeli):
-    // https://wazder.github.io/spotify-controller/
-    // https://wazder.github.io/spotify-controller/index.html
     const redirectUri = 'https://wazder.github.io/spotify-controller/';
     const clientId = '46a1e07e779c46998b413317a78b8a26';
     const skipThreshold = 3 * 1000;
@@ -176,6 +173,7 @@
     let playlists = [], nextPlaylistsUrl = null;
     let tracks = [], nextTracksUrl = null;
     let selectedPlaylistId = '', playingContextUri = '';
+    let selectedPlaylistTotal = 0;
     let currentIndex = 0, currentDurationMs = 0, updateInterval = null;
     let showInfoView = false;
 
@@ -190,6 +188,7 @@
       document.getElementById('trackColumn').style.display = showInfoView ? 'none' : 'block';
       document.getElementById('infoColumn').style.display = showInfoView ? 'block' : 'none';
     }
+
     document.getElementById('moreBtn').addEventListener('click', () => {
       showInfoView = !showInfoView;
       updateView();
@@ -199,7 +198,6 @@
       const params = new URLSearchParams(window.location.search);
       const code = params.get('code');
       if (!code) return;
-
       const verifier = localStorage.getItem('spotify_code_verifier');
       const body = new URLSearchParams({
         grant_type: 'authorization_code',
@@ -208,19 +206,13 @@
         client_id: clientId,
         code_verifier: verifier
       });
-
       const resp = await fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: body.toString()
       });
       const data = await resp.json();
-
-      if (data.error) {
-        console.error('Spotify token error:', data);
-        return alert('Token alınamadı: ' + data.error);
-      }
-
+      if (data.error) return alert('Token alınamadı: ' + data.error);
       window.history.replaceState({}, '', window.location.pathname);
       window.accessToken = data.access_token;
       document.getElementById('loginContainer').style.display = 'none';
@@ -235,7 +227,6 @@
       const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
       const challenge = btoa(String.fromCharCode(...new Uint8Array(hash)))
                         .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-
       window.location =
         `https://accounts.spotify.com/authorize?response_type=code`
         + `&client_id=${encodeURIComponent(clientId)}`
@@ -258,6 +249,7 @@
       })
       .catch(e => alert('Playlist yüklenemedi: ' + e));
     }
+
     document.getElementById('morePlaylistsBtn').onclick = () => fetchPlaylists(nextPlaylistsUrl);
 
     function renderPlaylists() {
@@ -284,6 +276,7 @@
 
     function selectPlaylist(pl) {
       selectedPlaylistId = pl.id;
+      selectedPlaylistTotal = pl.tracks.total;
       tracks = []; nextTracksUrl = null;
       showInfoView = false; updateView();
       renderPlaylists();
@@ -303,11 +296,13 @@
       })
       .catch(e => alert('Şarkılar yüklenemedi: ' + e));
     }
+
     document.getElementById('moreTracksBtn').onclick = () => fetchTracks(nextTracksUrl);
 
     function renderTracks() {
       const c = document.getElementById('trackContainer');
-      document.querySelector('#trackColumn h3').textContent = `Tracks (${tracks.length})`;
+      document.querySelector('#trackColumn h3')
+        .textContent = `Tracks (${selectedPlaylistTotal})`;
       c.innerHTML = '';
       tracks.forEach((i, idx) => {
         const t = i.track;
@@ -337,13 +332,11 @@
       });
       playingContextUri = selectedPlaylistId;
       currentIndex = idx;
-
       document.getElementById('nowTitle').textContent = t.name;
       const detailLine = `${t.artists.map(a=>a.name).join(', ')} / ${t.album.name} / ${t.name}`;
       document.getElementById('detailCover').style.backgroundImage = `url(${t.album.images[0]?.url})`;
       document.getElementById('coverArt').style.backgroundImage = `url(${t.album.images[0]?.url})`;
       document.getElementById('detailInfo').textContent = detailLine;
-
       renderPlaylists(); renderTracks();
       clearInterval(updateInterval);
       document.getElementById('positionDisplay').textContent = `00:00 / ${formatMS(t.duration_ms)}`;
