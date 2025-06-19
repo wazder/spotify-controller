@@ -1,9 +1,11 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no" />
   <title>wazder's spotify controller</title>
+  <link rel="icon" href="logo.png" />
   <style>
     html, body {
       margin: 0;
@@ -14,7 +16,6 @@
       color: #fff;
       font-family: Arial, sans-serif;
     }
-    /* LOGIN SCREEN */
     #loginContainer {
       position: fixed;
       top: 0; left: 0;
@@ -24,6 +25,11 @@
       align-items: center;
       justify-content: flex-start;
       padding-top: 20vh;
+    }
+    #logo {
+      width: 100px;
+      height: auto;
+      margin-bottom: 20px;
     }
     #loginContainer h1 {
       margin-bottom: 20px;
@@ -39,14 +45,12 @@
       color: #fff;
       cursor: pointer;
     }
-    /* MAIN APP */
     #app {
       display: none;
       padding: 20px;
       height: 100%;
       box-sizing: border-box;
     }
-    /* Now Playing panel */
     #nowPlaying {
       display: flex;
       align-items: center;
@@ -73,16 +77,17 @@
       font-size: 0.9rem;
       margin-top: 4px;
     }
-    /* Progress bar */
     #progressBar {
-      width: 100%; height: 4px;
+      width: 400px;
+      height: 4px;
       background-color: #444;
       border-radius: 2px;
       overflow: hidden;
       margin-top: 8px;
     }
     #progress {
-      width: 0%; height: 100%;
+      width: 0%;
+      height: 100%;
       background-color: #666;
       border-radius: 2px;
     }
@@ -109,7 +114,6 @@
       color: #fff;
       cursor: pointer;
     }
-    /* Two-column layout */
     #containers {
       display: flex;
       gap: 20px;
@@ -148,6 +152,10 @@
       text-overflow: ellipsis;
       max-width: 100%;
     }
+    .item .desc {
+      color: rgba(255, 255, 255, 0.3);
+      margin-left: 4px;
+    }
     .show-more {
       display: block;
       width: 100%;
@@ -173,6 +181,7 @@
 </head>
 <body>
   <div id="loginContainer">
+    <img id="logo" src="logo.png" alt="Logo" />
     <h1>welcome to wazder's spotify controller</h1>
     <button id="loginBtn">Spotify Login</button>
   </div>
@@ -238,16 +247,8 @@
       const clientId = '46a1e07e779c46998b413317a78b8a26';
       const redirectUri = window.location.origin + window.location.pathname;
       const verifier = localStorage.getItem('spotify_code_verifier');
-      const body = new URLSearchParams({
-        grant_type: 'authorization_code',
-        code, redirect_uri: redirectUri,
-        client_id: clientId, code_verifier: verifier
-      });
-      const resp = await fetch('https://accounts.spotify.com/api/token', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/x-www-form-urlencoded' },
-        body: body.toString()
-      });
+      const body = new URLSearchParams({ grant_type: 'authorization_code', code, redirect_uri: redirectUri, client_id: clientId, code_verifier: verifier });
+      const resp = await fetch('https://accounts.spotify.com/api/token', { method:'POST', headers:{ 'Content-Type':'application/x-www-form-urlencoded' }, body: body.toString() });
       const data = await resp.json();
       if (!data.access_token) return alert('Token alınamadı.');
       window.history.replaceState({},'',window.location.pathname);
@@ -260,23 +261,16 @@
     document.getElementById('loginBtn').addEventListener('click', async ()=>{
       const clientId = '46a1e07e779c46998b413317a78b8a26';
       const redirectUri = window.location.origin + window.location.pathname;
-      const verifier = Array.from(crypto.getRandomValues(new Uint8Array(64)), dec=>('0'+dec.toString(16)).slice(-2)).join('');
+      constVerifier = Array.from(crypto.getRandomValues(new Uint8Array(64)), dec=>('0'+dec.toString(16)).slice(-2)).join('');
       localStorage.setItem('spotify_code_verifier', verifier);
       const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
-      const challenge = btoa(String.fromCharCode(...new Uint8Array(hash)))
-        .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-      const authUrl = `https://accounts.spotify.com/authorize?`+
-        `response_type=code&client_id=${encodeURIComponent(clientId)}`+
-        `&scope=${encodeURIComponent('playlist-read-private user-modify-playback-state user-read-playback-state')}`+
-        `&redirect_uri=${encodeURIComponent(redirectUri)}`+
-        `&code_challenge_method=S256&code_challenge=${encodeURIComponent(challenge)}`;
+      const challenge = btoa(String.fromCharCode(...new Uint8Array(hash))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+      const authUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&scope=${encodeURIComponent('playlist-read-private user-modify-playback-state user-read-playback-state')}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge_method=S256&code_challenge=${encodeURIComponent(challenge)}`;
       window.location = authUrl;
     });
 
     function fetchPlaylists(url) {
-      fetch(url||'https://api.spotify.com/v1/me/playlists?limit=50',{
-        headers:{ 'Authorization':'Bearer '+window.accessToken }
-      })
+      fetch(url||'https://api.spotify.com/v1/me/playlists?limit=50',{ headers:{ 'Authorization':'Bearer '+window.accessToken } })
       .then(r=>r.json())
       .then(data=>{
         playlists.push(...data.items);
@@ -293,9 +287,7 @@
       c.innerHTML = '';
       playlists.forEach(pl=>{
         const div = document.createElement('div');
-        div.className = 'item' +
-          (pl.id===selectedPlaylistId?' selected':'') +
-          (pl.id===playingContextUri?' playing':'');
+        div.className = 'item'+(pl.id===selectedPlaylistId?' selected':'')+(pl.id===playingContextUri?' playing':'');
         const span = document.createElement('span');
         span.textContent = pl.name;
         div.appendChild(span);
@@ -311,96 +303,43 @@
     }
 
     function selectPlaylist(pl) {
-      selectedPlaylistId = pl.id;
-      tracks = []; nextTracksUrl = null;
-      showInfoView = false; updateView();
-      renderPlaylists();
-      fetchTracks(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=50`);
+      selectedPlaylistId = pl.id; tracks=[]; nextTracksUrl=null; showInfoView=false; updateView(); renderPlaylists(); fetchTracks(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=50`);
     }
 
     function fetchTracks(url) {
       fetch(url,{headers:{'Authorization':'Bearer '+window.accessToken}})
       .then(r=>r.json())
-      .then(data=>{
-        tracks.push(...data.items);
-        nextTracksUrl = data.next;
-        renderTracks();
-        document.getElementById('moreTracksBtn').style.display = nextTracksUrl?'block':'none';
-      })
+      .then(data=>{ tracks.push(...data.items); nextTracksUrl=data.next; renderTracks(); document.getElementById('moreTracksBtn').style.display=nextTracksUrl?'block':'none'; })
       .catch(e=>alert('Şarkılar yüklenemedi: '+e));
     }
     document.getElementById('moreTracksBtn').addEventListener('click',()=>fetchTracks(nextTracksUrl));
 
     function renderTracks() {
-      const c = document.getElementById('trackContainer');
-      document.querySelector('#trackColumn h3').textContent = `Tracks (${tracks.length})`;
-      c.innerHTML = '';
+      const c=document.getElementById('trackContainer'); document.querySelector('#trackColumn h3').textContent=`Tracks (${tracks.length})`; c.innerHTML='';
       tracks.forEach((i,idx)=>{
-        const t=i.track;
-        const div=document.createElement('div');
-        div.className='item'+(idx===currentIndex?' playing':'');
-        const span=document.createElement('span');
-        span.textContent=t.name;
-        div.appendChild(span);
-        div.addEventListener('click',()=>playTrack(idx));
-        c.appendChild(div);
+        const t=i.track; const div=document.createElement('div'); div.className='item'+(idx===currentIndex?' playing':'');
+        const span=document.createElement('span'); span.textContent=t.name; div.appendChild(span);
+        div.addEventListener('click',()=>playTrack(idx)); c.appendChild(div);
       });
     }
 
     async function playTrack(idx) {
-      const t=tracks[idx].track;
-      currentDurationMs = t.duration_ms;
-      await fetch('https://api.spotify.com/v1/me/player/play',{
-        method:'PUT',
-        headers:{
-          'Authorization':'Bearer '+window.accessToken,
-          'Content-Type':'application/json'
-        },
-        body:JSON.stringify({
-          context_uri:`spotify:playlist:${selectedPlaylistId}`,
-          offset:{position:idx}
-        })
-      });
-      playingContextUri = selectedPlaylistId;
-      currentIndex = idx;
-      const line = `${t.artists.map(a=>a.name).join(', ')} / ${t.album.name} - ${t.name}`;
-      document.getElementById('nowTitle').textContent = line;
-      document.getElementById('coverArt').style.backgroundImage = `url(${t.album.images[0]?.url})`;
-      document.getElementById('detailCover').style.backgroundImage = `url(${t.album.images[0]?.url})`;
-      document.getElementById('detailInfo').textContent = line;
-      renderPlaylists();
-      renderTracks();
-      clearInterval(updateInterval);
-      document.getElementById('positionDisplay').textContent = `00:00 / ${formatMS(t.duration_ms)}`;
-      updateInterval = setInterval(updatePosition,1000);
+      const t=tracks[idx].track; currentDurationMs=t.duration_ms;
+      await fetch('https://api.spotify.com/v1/me/player/play',{method:'PUT',headers:{'Authorization':'Bearer '+window.accessToken,'Content-Type':'application/json'},body:JSON.stringify({context_uri:`spotify:playlist:${selectedPlaylistId}`,offset:{position:idx}})});
+      playingContextUri=selectedPlaylistId; currentIndex=idx;
+      const line=`${t.artists.map(a=>a.name).join(', ')} / ${t.album.name} - ${t.name}`;
+      document.getElementById('nowTitle').textContent=line; document.getElementById('coverArt').style.backgroundImage=`url(${t.album.images[0]?.url})`; document.getElementById('detailCover').style.backgroundImage=`url(${t.album.images[0]?.url})`; document.getElementById('detailInfo').textContent=line;
+      renderPlaylists(); renderTracks(); clearInterval(updateInterval); document.getElementById('positionDisplay').textContent=`00:00 / ${formatMS(t.duration_ms)}`; updateInterval=setInterval(updatePosition,1000);
     }
 
     function updatePosition() {
-      fetch('https://api.spotify.com/v1/me/player',{
-        headers:{'Authorization':'Bearer '+window.accessToken}
-      })
+      fetch('https://api.spotify.com/v1/me/player',{headers:{'Authorization':'Bearer '+window.accessToken}})
       .then(r=>r.json())
       .then(state=>{
         const elapsed=state.progress_ms||0;
-        // Bitişe 6 saniye kala bir sonraki şarkıyı seç ve aç
-        if(elapsed >= currentDurationMs - 6000){
-          clearInterval(updateInterval);
-          const nextIdx = (currentIndex + 1) % tracks.length;
-          // track elemanına tıklama simülasyonu:
-          const items = document.querySelectorAll('#trackContainer .item');
-          if(items[nextIdx]) {
-            items[nextIdx].click();
-          } else {
-            playTrack(nextIdx);
-          }
-          return;
-        }
-        document.getElementById('positionDisplay').textContent =
-          `${formatMS(elapsed)} / ${formatMS(currentDurationMs)}`;
-        const pct=(elapsed/currentDurationMs)*100;
-        document.getElementById('progress').style.width = `${pct}%`;
-      })
-      .catch(()=>{});
+        if(elapsed>=currentDurationMs-6000){ clearInterval(updateInterval); const nextIdx=(currentIndex+1)%tracks.length; const items=document.querySelectorAll('#trackContainer .item'); if(items[nextIdx]) items[nextIdx].click(); else playTrack(nextIdx); return; }
+        document.getElementById('positionDisplay').textContent=`${formatMS(elapsed)} / ${formatMS(currentDurationMs)}`; document.getElementById('progress').style.width=`${(elapsed/currentDurationMs)*100}%`;
+      }).catch(()=>{});
     }
 
     document.getElementById('prevBtn').addEventListener('click',()=>playTrack((currentIndex-1+tracks.length)%tracks.length));
