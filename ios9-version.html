@@ -7,126 +7,45 @@
   <title>wazder's spotify controller</title>
   <link rel="icon" href="logo.png" />
   <style>
-    html, body {
-      margin: 0; padding: 0;
-      height: 100%; overflow: hidden;
-      background-color: #000; color: #fff;
-      font-family: Arial, sans-serif;
-    }
-    #loginContainer {
-      position: fixed; top: 0; left: 0;
-      width: 100%; height: 100%;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      transform: translateY(-20%);
-    }
-    #loginContainer h1 {
-      margin-bottom: 20px; font-size: 2rem;
-      text-align: center;
-    }
-    #loginBtn {
-      padding: 12px 24px; font-size: 1.2rem;
-      border: none; border-radius: 4px;
-      background-color: #1DB954; color: #fff;
-      cursor: pointer;
-    }
-    #app {
-      display: none; padding: 20px;
-      height: 100%; box-sizing: border-box;
-    }
-    #nowPlaying {
-      display: flex; align-items: center; gap: 16px;
-      background-color: #333; border-radius: 8px;
-      padding: 10px; margin-bottom: 20px;
-    }
-    #coverArt {
-      width: 64px; height: 64px;
-      background-color: #222; border-radius: 4px;
-      background-size: cover; background-position: center;
-    }
-    #trackInfo h2 {
-      margin: 0; font-size: 1.2rem;
-      white-space: nowrap; overflow: hidden;
-    }
-    #positionDisplay {
-      font-size: 0.9rem; margin-top: 4px;
-    }
-    #progressBar {
-      width: 400px; height: 4px;
-      background-color: #444; border-radius: 2px;
-      overflow: hidden; margin-top: 8px;
-    }
-    #progress {
-      width: 0%; height: 100%;
-      background-color: #666; border-radius: 2px;
-    }
-    #controls {
-      display: flex; align-items: center; gap: 10px;
-      margin-left: auto;
-    }
-    #moreBtn {
-      padding: 6px 12px; font-size: 0.9rem;
-      border: none; border-radius: 4px;
-      background-color: #555; color: #fff;
-      cursor: pointer;
-    }
-    #prevBtn, #nextBtn {
-      font-size: 1.2rem; padding: 8px;
-      background: transparent; border: none;
-      color: #fff; cursor: pointer;
-    }
-    #containers {
-      display: flex; gap: 20px;
-      height: calc(100% - 140px);
-    }
-    .column {
-      flex: 1; background-color: #111;
-      padding: 10px; border-radius: 4px;
-      overflow-y: auto;
-    }
-    .column h3 {
-      margin-top: 0; font-size: 1rem;
-    }
-    .item {
-      padding: 8px; margin-bottom: 4px;
-      border: 1px solid #333; border-radius: 4px;
-      cursor: pointer; display: flex;
-      align-items: center;
-    }
-    .item.playing {
-      background-color: #1DB954; color: #000;
-    }
-    .item.selected {
-      border-color: brown;
-    }
-    .item span {
-      display: inline-block; white-space: nowrap;
-      overflow: hidden; text-overflow: ellipsis;
-      max-width: 100%;
-    }
-    .item .desc {
-      color: rgba(255,255,255,0.3); margin-left: 4px;
-    }
-    .show-more {
-      display: block; width: 100%; padding: 8px;
-      margin-top: 8px; text-align: center;
-      background: none; border: 1px solid #1DB954;
-      color: #1DB954; border-radius: 4px;
-      cursor: pointer;
-    }
-    #infoColumn { display: none; }
-    #footer {
-      position: fixed; bottom: 10px; right: 10px;
-      font-size: 0.8rem; color: rgba(255,255,255,0.3);
-      pointer-events: none; z-index: 1000;
-    }
+    html, body { margin:0; padding:0; height:100%; overflow:hidden; background:#000; color:#fff; font-family:Arial,sans-serif; }
+    #loginContainer { position:fixed; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; transform:translateY(-20%); }
+    #loginContainer h1 { margin-bottom:20px; font-size:2rem; text-align:center; }
+    #loginBtn { padding:12px 24px; font-size:1.2rem; border:none; border-radius:4px; background-color:#1DB954; color:#fff; cursor:pointer; }
+    #app { display:none; padding:20px; height:100%; box-sizing:border-box; }
+    #nowPlaying { display:flex; align-items:center; background-color:#333; border-radius:8px; padding:10px; margin-bottom:20px; }
+    #nowPlaying > * { margin-right:16px; }
+    #nowPlaying > *:last-child { margin-right:0; }
+    #coverArt { width:64px; height:64px; background-color:#222; border-radius:4px; background-size:cover; background-position:center; }
+    #trackInfo h2 { margin:0; font-size:1.2rem; white-space:nowrap; overflow:hidden; }
+    #positionDisplay { font-size:0.9rem; margin-top:4px; }
+    #progressBar { width:400px; height:4px; background-color:#444; border-radius:2px; overflow:hidden; margin-top:8px; }
+    #progress { width:0%; height:100%; background-color:#666; border-radius:2px; }
+    #controls { display:flex; align-items:center; margin-left:auto; }
+    #controls > * { margin-right:10px; }
+    #controls > *:last-child { margin-right:0; }
+    #moreBtn { padding:6px 12px; font-size:0.9rem; border:none; border-radius:4px; background-color:#555; color:#fff; cursor:pointer; }
+    #prevBtn, #nextBtn { font-size:1.2rem; padding:8px; background:transparent; border:none; color:#fff; cursor:pointer; }
+    #containers { display:flex; height:calc(100% - 140px); }
+    #containers > .column { flex:1; background-color:#111; padding:10px; border-radius:4px; overflow-y:auto; margin-right:20px; }
+    #containers > .column:last-child { margin-right:0; }
+    .column h3 { margin-top:0; font-size:1rem; }
+    .item { padding:8px; margin-bottom:4px; border:1px solid #333; border-radius:4px; cursor:pointer; display:flex; align-items:center; }
+    .item.playing { background-color:#1DB954; color:#000; }
+    .item.selected { border-color:brown; }
+    .item span { display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+    .item .desc { color:rgba(255,255,255,0.3); margin-left:4px; }
+    .show-more { display:block; width:100%; padding:8px; margin-top:8px; text-align:center; background:none; border:1px solid #1DB954; color:#1DB954; border-radius:4px; cursor:pointer; }
+    #infoColumn { display:none; }
+    #footer { position:fixed; bottom:10px; right:10px; font-size:0.8rem; color:rgba(255,255,255,0.3); pointer-events:none; z-index:1000; }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsSHA/2.4.2/sha.min.js"></script>
 </head>
 <body>
   <div id="loginContainer">
     <h1>welcome to wazder's spotify controller</h1>
     <button id="loginBtn">Spotify Login</button>
   </div>
+
   <div id="app">
     <div id="nowPlaying">
       <div id="coverArt"></div>
@@ -159,188 +78,123 @@
       </div>
     </div>
   </div>
+
   <div id="footer">made by wazder ❤</div>
+
   <script>
-    function buildQuery(params) {
-      var str = [];
-      for (var key in params) {
-        if (params.hasOwnProperty(key)) {
-          str.push(encodeURIComponent(key) + '=' + encodeURIComponent(params[key]));
-        }
-      }
-      return str.join('&');
+    function base64url(source) {
+      var b64 = source.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+      return b64;
     }
-    document.getElementById('loginBtn').addEventListener('click', function() {
-      var clientId    = '46a1e07e779c46998b413317a78b8a26';
-      var redirectUri = window.location.origin + window.location.pathname;
-      var scope       = 'playlist-read-private user-modify-playback-state user-read-playback-state';
-      var params = {
-        response_type: 'token',
-        client_id:      clientId,
-        redirect_uri:   redirectUri,
-        scope:          scope
-      };
-      window.location = 'https://accounts.spotify.com/authorize?' + buildQuery(params);
-    });
-    window.addEventListener('load', function() {
-      if (window.location.hash && window.location.hash.indexOf('access_token') !== -1) {
-        var hashParts = window.location.hash.substring(1).split('&');
-        var token = '';
-        for (var i = 0; i < hashParts.length; i++) {
-          var kv = hashParts[i].split('=');
-          if (decodeURIComponent(kv[0]) === 'access_token') {
-            token = decodeURIComponent(kv[1]);
-            break;
-          }
-        }
-        if (token) {
-          window.accessToken = token;
-          window.history.replaceState(null, '', window.location.pathname);
-          document.getElementById('loginContainer').style.display = 'none';
-          document.getElementById('app').style.display = 'block';
-          fetchPlaylists();
-        }
-      }
-    });
-    const skipThreshold = 3 * 1000;
-    let playlists = [], nextPlaylistsUrl = null;
-    let tracks = [], nextTracksUrl = null;
-    let selectedPlaylistId = '', playingContextUri = '';
-    let currentIndex = 0, currentDurationMs = 0, updateInterval = null;
-    let showInfoView = false;
+    function sha256(verifier) {
+      var shaObj = new jsSHA('SHA-256','TEXT');
+      shaObj.update(verifier);
+      return shaObj.getHash('B64');
+    }
+
+    var skipThreshold = 3000;
+    var playlists = [], nextPlaylistsUrl = null;
+    var tracks = [], nextTracksUrl = null;
+    var selectedPlaylistId = '', playingContextUri = '';
+    var currentIndex = 0, currentDurationMs = 0, updateInterval = null;
+    var showInfoView = false;
+    var accessToken = '';
+
     function formatMS(ms) {
-      const totalSec = Math.floor(ms/1000), m = Math.floor(totalSec/60), s = totalSec % 60;
-      return `${m<10?'0':''}${m}:${s<10?'0':''}${s}`;
+      var totalSec = Math.floor(ms/1000);
+      var m = Math.floor(totalSec/60);
+      var s = totalSec % 60;
+      return (m<10?'0':'')+m+':'+(s<10?'0':'')+s;
     }
+    function xhr(url, method, body, cb) {
+      var req = new XMLHttpRequest();
+      req.open(method,url,true);
+      if(accessToken) req.setRequestHeader('Authorization','Bearer '+accessToken);
+      if(body) req.setRequestHeader('Content-Type','application/json');
+      req.onreadystatechange = function() {
+        if(req.readyState===4) {
+          if(req.status>=200&&req.status<300) cb(null,JSON.parse(req.responseText));
+          else cb(new Error('HTTP '+req.status));
+        }
+      };
+      req.send(body?JSON.stringify(body):null);
+    }
+
     function updateView() {
-      document.getElementById('trackColumn').style.display = showInfoView ? 'none' : 'block';
-      document.getElementById('infoColumn').style.display  = showInfoView ? 'block': 'none';
+      document.getElementById('trackColumn').style.display = showInfoView?'none':'block';
+      document.getElementById('infoColumn').style.display = showInfoView?'block':'none';
     }
-    document.getElementById('moreBtn').addEventListener('click', function() {
-      showInfoView = !showInfoView; updateView();
-    });
-    function fetchPlaylists(url) {
-      fetch(url || 'https://api.spotify.com/v1/me/playlists?limit=50', {
-        headers: { 'Authorization': 'Bearer ' + window.accessToken }
-      })
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        playlists.push.apply(playlists, data.items);
-        nextPlaylistsUrl = data.next;
-        renderPlaylists();
-        document.getElementById('morePlaylistsBtn').style.display = nextPlaylistsUrl ? 'block' : 'none';
-      })
-      .catch(function(e) { alert('Playlist yüklenemedi: ' + e); });
-    }
-    document.getElementById('morePlaylistsBtn').onclick = function() { fetchPlaylists(nextPlaylistsUrl); };
+    document.getElementById('moreBtn').onclick = function(){ showInfoView=!showInfoView; updateView(); };
+
+    (function(){
+      var params = {};
+      window.location.search.substring(1).split('&').forEach(function(p){
+        var kv = p.split('='); params[kv[0]] = decodeURIComponent(kv[1]||'');
+      });
+      if(!params.code) return;
+      var clientId='46a1e07e779c46998b413317a78b8a26';
+      var redirectUri=window.location.origin+window.location.pathname;
+      var verifier=localStorage.getItem('spotify_code_verifier');
+      var body='grant_type=authorization_code'+'&code='+encodeURIComponent(params.code)
+        +'&redirect_uri='+encodeURIComponent(redirectUri)
+        +'&client_id='+clientId+'&code_verifier='+verifier;
+      var req=new XMLHttpRequest();
+      req.open('POST','https://accounts.spotify.com/api/token',true);
+      req.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+      req.onreadystatechange=function(){
+        if(req.readyState===4&&req.status===200){
+          var data=JSON.parse(req.responseText);
+          accessToken=data.access_token;
+          document.getElementById('loginContainer').style.display='none';
+          document.getElementById('app').style.display='block';
+          fetchPlaylists();
+          history.replaceState(null,'',window.location.pathname);
+        }
+      };
+      req.send(body);
+    })();
+
+    document.getElementById('loginBtn').onclick=function(){
+      var clientId='46a1e07e779c46998b413317a78b8a26';
+      var redirectUri=window.location.origin+window.location.pathname;
+      var arr=new Uint8Array(64);
+      window.crypto.getRandomValues(arr);
+      var verifier=''; for(var i=0;i<arr.length;i++){ var h=arr[i].toString(16); verifier+=(h.length===1?'0':'')+h; }
+      localStorage.setItem('spotify_code_verifier',verifier);
+      var challenge=base64url(sha256(verifier));
+      window.location='https://accounts.spotify.com/authorize?response_type=code'
+        +'&client_id='+encodeURIComponent(clientId)
+        +'&scope='+encodeURIComponent('playlist-read-private user-modify-playback-state user-read-playback-state')
+        +'&redirect_uri='+encodeURIComponent(redirectUri)
+        +'&code_challenge_method=S256'
+        +'&code_challenge='+encodeURIComponent(challenge);
+    };
+
+    function fetchPlaylists(url) { xhr(url||'https://api.spotify.com/v1/me/playlists?limit=50','GET',null,function(err,data){ if(err) return alert('Playlist yüklenemedi: '+err); playlists=playlists.concat(data.items); nextPlaylistsUrl=data.next; renderPlaylists(); document.getElementById('morePlaylistsBtn').style.display=nextPlaylistsUrl?'block':'none'; }); }
+    document.getElementById('morePlaylistsBtn').onclick=function(){ fetchPlaylists(nextPlaylistsUrl); };
+
     function renderPlaylists() {
-      var c = document.getElementById('playlistContainer');
-      c.innerHTML = '';
-      playlists.forEach(function(pl) {
-        var div = document.createElement('div');
-        div.className = 'item' +
-          (pl.id===selectedPlaylistId ? ' selected' : '') +
-          (pl.id===playingContextUri ? ' playing' : '');
-        var span = document.createElement('span');
-        span.textContent = pl.name;
-        div.appendChild(span);
-        if (pl.description) {
-          var ds = document.createElement('span');
-          ds.className = 'desc';
-          ds.textContent = ', ' + pl.description;
-          div.appendChild(ds);
-        }
-        div.onclick = function() { selectPlaylist(pl); };
-        c.appendChild(div);
+      var c=document.getElementById('playlistContainer'); c.innerHTML=''; playlists.forEach(function(pl){
+        var div=document.createElement('div');
+        div.className='item'+(pl.id===selectedPlaylistId?' selected':'')+(pl.id===playingContextUri?' playing':'');
+        var span=document.createElement('span'); span.textContent=pl.name;
+        div.appendChild(span); div.onclick=function(){ selectPlaylist(pl); }; c.appendChild(div);
       });
     }
-    function selectPlaylist(pl) {
-      selectedPlaylistId = pl.id;
-      tracks = []; nextTracksUrl = null;
-      showInfoView = false; updateView();
-      renderPlaylists();
-      fetchTracks('https://api.spotify.com/v1/playlists/' + pl.id + '/tracks?limit=50');
-    }
-    function fetchTracks(url) {
-      fetch(url, {
-        headers: { 'Authorization': 'Bearer ' + window.accessToken }
-      })
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        tracks.push.apply(tracks, data.items);
-        nextTracksUrl = data.next;
-        renderTracks();
-        document.getElementById('moreTracksBtn').style.display = nextTracksUrl ? 'block' : 'none';
-      })
-      .catch(function(e) { alert('Şarkılar yüklenemedi: ' + e); });
-    }
-    document.getElementById('moreTracksBtn').onclick = function() { fetchTracks(nextTracksUrl); };
-    function renderTracks() {
-      var c = document.getElementById('trackContainer');
-      document.querySelector('#trackColumn h3').textContent = 'Tracks (' + tracks.length + ')';
-      c.innerHTML = '';
-      tracks.forEach(function(i, idx) {
-        var t = i.track;
-        var div = document.createElement('div');
-        div.className = 'item' + (idx===currentIndex ? ' playing' : '');
-        var span = document.createElement('span');
-        span.textContent = t.name;
-        div.appendChild(span);
-        div.onclick = function() { playTrack(idx); };
-        c.appendChild(div);
-      });
-    }
-    function playTrack(idx) {
-      var t = tracks[idx].track;
-      currentDurationMs = t.duration_ms;
-      fetch('https://api.spotify.com/v1/me/player/play', {
-        method: 'PUT',
-        headers: {
-          'Authorization': 'Bearer ' + window.accessToken,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          context_uri: 'spotify:playlist:' + selectedPlaylistId,
-          offset: { position: idx }
-        })
-      });
-      playingContextUri = selectedPlaylistId;
-      currentIndex = idx;
-      document.getElementById('nowTitle').textContent = t.name;
-      document.getElementById('coverArt').style.backgroundImage = 'url(' + t.album.images[0].url + ')';
-      document.getElementById('detailCover').style.backgroundImage = 'url(' + t.album.images[0].url + ')';
-      document.getElementById('detailInfo').textContent =
-        t.artists.map(function(a){ return a.name; }).join(', ') + ' / ' +
-        t.album.name + ' / ' + t.name;
-      renderPlaylists(); renderTracks();
-      clearInterval(updateInterval);
-      document.getElementById('positionDisplay').textContent = '00:00 / ' + formatMS(t.duration_ms);
-      updateInterval = setInterval(function(){ updatePosition(); }, 1000);
-    }
-    function updatePosition() {
-      fetch('https://api.spotify.com/v1/me/player', {
-        headers: { 'Authorization': 'Bearer ' + window.accessToken }
-      })
-      .then(function(r){ return r.json(); })
-      .then(function(state){
-        var elapsed = state.progress_ms || 0;
-        if (elapsed >= currentDurationMs - skipThreshold) {
-          clearInterval(updateInterval);
-          playTrack((currentIndex+1) % tracks.length);
-          return;
-        }
-        document.getElementById('positionDisplay').textContent =
-          formatMS(elapsed) + ' / ' + formatMS(currentDurationMs);
-        document.getElementById('progress').style.width = (elapsed/currentDurationMs*100) + '%';
-      })
-      .catch(function(){});
-    }
-    document.getElementById('prevBtn').onclick = function() {
-      playTrack((currentIndex-1+tracks.length)%tracks.length);
-    };
-    document.getElementById('nextBtn').onclick = function() {
-      playTrack((currentIndex+1)%tracks.length);
-    };
+
+    function selectPlaylist(pl) { selectedPlaylistId=pl.id; tracks=[]; nextTracksUrl=null; showInfoView=false; updateView(); renderPlaylists(); fetchTracks('https://api.spotify.com/v1/playlists/'+pl.id+'/tracks?limit=50'); }
+
+    function fetchTracks(url) { xhr(url,'GET',null,function(err,data){ if(err) return alert('Şarkılar yüklenemedi: '+err); tracks=tracks.concat(data.items); nextTracksUrl=data.next; renderTracks(); document.getElementById('moreTracksBtn').style.display=nextTracksUrl?'block':'none'; }); }
+    document.getElementById('moreTracksBtn').onclick=function(){ fetchTracks(nextTracksUrl); };
+
+    function renderTracks() { var c=document.getElementById('trackContainer'); document.querySelector('#trackColumn h3').textContent='Tracks ('+tracks.length+')'; c.innerHTML=''; tracks.forEach(function(i,idx){ var t=i.track; var div=document.createElement('div'); div.className='item'+(idx===currentIndex?' playing':''); var span=document.createElement('span'); span.textContent=t.name; div.appendChild(span); div.onclick=function(){ playTrack(idx); }; c.appendChild(div); }); }
+
+    function playTrack(idx) { var t=tracks[idx].track; currentDurationMs=t.duration_ms; xhr('https://api.spotify.com/v1/me/player/play','PUT',{ context_uri:'spotify:playlist:'+selectedPlaylistId, offset:{position:idx} }, function(err){ if(err) return; playingContextUri=selectedPlaylistId; currentIndex=idx; document.getElementById('nowTitle').textContent=t.name; var detailLine=t.artists.map(function(a){return a.name;}).join(', ')+ ' / '+t.album.name+' / '+t.name; document.getElementById('detailCover').style.backgroundImage='url('+t.album.images[0].url+')'; document.getElementById('coverArt').style.backgroundImage='url('+t.album.images[0].url+')'; document.getElementById('detailInfo').textContent=detailLine; renderPlaylists(); renderTracks(); clearInterval(updateInterval); document.getElementById('positionDisplay').textContent='00:00 / '+formatMS(t.duration_ms); updateInterval=setInterval(updatePosition,1000); }); }
+
+    function updatePosition() { xhr('https://api.spotify.com/v1/me/player','GET',null,function(err,state){ if(err) return; var elapsed=state.progress_ms||0; if(elapsed>=currentDurationMs-skipThreshold){ clearInterval(updateInterval); playTrack((currentIndex+1)%tracks.length); return; } document.getElementById('positionDisplay').textContent=formatMS(elapsed)+' / '+formatMS(currentDurationMs); document.getElementById('progress').style.width=(elapsed/currentDurationMs*100)+'%'; }); }
+
+    document.getElementById('prevBtn').onclick=function(){ playTrack((currentIndex-1+tracks.length)%tracks.length); };
+    document.getElementById('nextBtn').onclick=function(){ playTrack((currentIndex+tracks.length)%tracks.length); };
   </script>
 </body>
 </html>
