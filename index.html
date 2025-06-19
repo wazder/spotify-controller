@@ -159,7 +159,6 @@
       text-overflow: ellipsis;
       max-width: 100%;
     }
-    /* Playlist description styling */
     .item .desc {
       color: rgba(255, 255, 255, 0.5);
       margin-left: 4px;
@@ -176,11 +175,9 @@
       border-radius: 4px;
       cursor: pointer;
     }
-    /* Initially hide info column */
     #infoColumn {
       display: none;
     }
-    /* Footer watermark */
     #footer {
       position: fixed;
       bottom: 10px;
@@ -231,13 +228,11 @@
       <div class="column" id="infoColumn">
         <h3>Track Info</h3>
         <div id="detailCover" style="width:80%;height:0;padding-bottom:80%;background:#222;background-size:cover;background-position:center;border-radius:4px;margin:0 auto 10px;"></div>
-        <p id="detailArtist">—</p>
         <p id="detailInfo">—</p>
       </div>
     </div>
   </div>
 
-  <!-- Footer watermark -->
   <div id="footer">made by wazder with love <3</div>
 
   <script>
@@ -306,21 +301,24 @@
       const verifier = Array.from(crypto.getRandomValues(new Uint8Array(64)), dec => ('0' + dec.toString(16)).slice(-2)).join('');
       localStorage.setItem('spotify_code_verifier', verifier);
       const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
-      const challenge = btoa(String.fromCharCode(...new Uint8Array(hash))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+      const challenge = btoa(String.fromCharCode(...new Uint8Array(hash)))
+        .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
       const authUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&scope=${encodeURIComponent('playlist-read-private user-modify-playback-state user-read-playback-state')}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge_method=S256&code_challenge=${encodeURIComponent(challenge)}`;
       window.location = authUrl;
     });
 
     function fetchPlaylists(url) {
-      fetch(url || 'https://api.spotify.com/v1/me/playlists?limit=50', { headers: { 'Authorization': 'Bearer ' + window.accessToken } })
-        .then(r => r.json())
-        .then(data => {
-          playlists.push(...data.items);
-          nextPlaylistsUrl = data.next;
-          renderPlaylists();
-          document.getElementById('morePlaylistsBtn').style.display = nextPlaylistsUrl ? 'block' : 'none';
-        })
-        .catch(e => alert('Playlist yüklenemedi: ' + e));
+      fetch(url || 'https://api.spotify.com/v1/me/playlists?limit=50', {
+        headers: { 'Authorization': 'Bearer ' + window.accessToken }
+      })
+      .then(r => r.json())
+      .then(data => {
+        playlists.push(...data.items);
+        nextPlaylistsUrl = data.next;
+        renderPlaylists();
+        document.getElementById('morePlaylistsBtn').style.display = nextPlaylistsUrl ? 'block' : 'none';
+      })
+      .catch(e => alert('Playlist yüklenemedi: ' + e));
     }
     document.getElementById('morePlaylistsBtn').addEventListener('click', () => fetchPlaylists(nextPlaylistsUrl));
 
@@ -329,7 +327,9 @@
       c.innerHTML = '';
       playlists.forEach(pl => {
         const div = document.createElement('div');
-        div.className = 'item' + (pl.id === selectedPlaylistId ? ' selected' : '') + (pl.id === playingContextUri ? ' playing' : '');
+        div.className = 'item'
+          + (pl.id === selectedPlaylistId ? ' selected' : '')
+          + (pl.id === playingContextUri ? ' playing' : '');
         const span = document.createElement('span');
         span.textContent = pl.name;
         div.appendChild(span);
@@ -356,14 +356,14 @@
 
     function fetchTracks(url) {
       fetch(url, { headers: { 'Authorization': 'Bearer ' + window.accessToken } })
-        .then(r => r.json())
-        .then(data => {
-          tracks.push(...data.items);
-          nextTracksUrl = data.next;
-          renderTracks();
-          document.getElementById('moreTracksBtn').style.display = nextTracksUrl ? 'block' : 'none';
-        })
-        .catch(e => alert('Şarkılar yüklenemedi: ' + e));
+      .then(r => r.json())
+      .then(data => {
+        tracks.push(...data.items);
+        nextTracksUrl = data.next;
+        renderTracks();
+        document.getElementById('moreTracksBtn').style.display = nextTracksUrl ? 'block' : 'none';
+      })
+      .catch(e => alert('Şarkılar yüklenemedi: ' + e));
     }
     document.getElementById('moreTracksBtn').addEventListener('click', () => fetchTracks(nextTracksUrl));
 
@@ -392,15 +392,19 @@
           'Authorization': 'Bearer ' + window.accessToken,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ context_uri: `spotify:playlist:${selectedPlaylistId}`, offset: { position: idx } })
+        body: JSON.stringify({
+          context_uri: `spotify:playlist:${selectedPlaylistId}`,
+          offset: { position: idx }
+        })
       });
       playingContextUri = selectedPlaylistId;
       currentIndex = idx;
-      document.getElementById('nowTitle').textContent = `${t.name} — ${t.artists.map(a => a.name).join(', ')}`;
+      document.getElementById('nowTitle').textContent =
+        `${t.artists.map(a => a.name).join(', ')} / ${t.album.name} - ${t.name}`;
       document.getElementById('coverArt').style.backgroundImage = `url(${t.album.images[0]?.url})`;
       document.getElementById('detailCover').style.backgroundImage = `url(${t.album.images[0]?.url})`;
-      document.getElementById('detailArtist').textContent = t.artists.map(a => a.name).join(', ');
-      document.getElementById('detailInfo').textContent = `"${t.album.name}" - "${t.name}"`;
+      document.getElementById('detailInfo').textContent =
+        `${t.artists.map(a => a.name).join(', ')} / ${t.album.name} - ${t.name}`;
       renderPlaylists();
       renderTracks();
       clearInterval(updateInterval);
@@ -409,26 +413,33 @@
     }
 
     function updatePosition() {
-      fetch('https://api.spotify.com/v1/me/player', { headers: { 'Authorization': 'Bearer ' + window.accessToken } })
-        .then(r => r.json())
-        .then(state => {
-          const elapsed = state.progress_ms || 0;
-          // Eşitlik durumunda da sonraki şarkıya geç
-          if (elapsed >= currentDurationMs) {
-            clearInterval(updateInterval);
-            const nextIdx = (currentIndex + 1) % tracks.length;
-            playTrack(nextIdx);
-            return;
-          }
-          document.getElementById('positionDisplay').textContent = `${formatMS(elapsed)} / ${formatMS(currentDurationMs)}`;
-          const pct = (elapsed / currentDurationMs) * 100;
-          document.getElementById('progress').style.width = `${pct}%`;
-        })
-        .catch(() => {});
+      fetch('https://api.spotify.com/v1/me/player', {
+        headers: { 'Authorization': 'Bearer ' + window.accessToken }
+      })
+      .then(r => r.json())
+      .then(state => {
+        const elapsed = state.progress_ms || 0;
+        // Bitişe 6 saniye kala sonraki şarkıya geç
+        if (elapsed >= currentDurationMs - 6000) {
+          clearInterval(updateInterval);
+          const nextIdx = (currentIndex + 1) % tracks.length;
+          playTrack(nextIdx);
+          return;
+        }
+        document.getElementById('positionDisplay').textContent =
+          `${formatMS(elapsed)} / ${formatMS(currentDurationMs)}`;
+        const pct = (elapsed / currentDurationMs) * 100;
+        document.getElementById('progress').style.width = `${pct}%`;
+      })
+      .catch(() => {});
     }
 
-    document.getElementById('prevBtn').addEventListener('click', () => playTrack((currentIndex - 1 + tracks.length) % tracks.length));
-    document.getElementById('nextBtn').addEventListener('click', () => playTrack((currentIndex + 1) % tracks.length));
+    document.getElementById('prevBtn').addEventListener('click', () =>
+      playTrack((currentIndex - 1 + tracks.length) % tracks.length)
+    );
+    document.getElementById('nextBtn').addEventListener('click', () =>
+      playTrack((currentIndex + 1) % tracks.length)
+    );
   </script>
 </body>
 </html>
